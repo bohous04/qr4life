@@ -1,4 +1,4 @@
-# QRforLife — návrh řešení
+# QR4Life — návrh řešení
 
 Datum: 2026-08-25 · Status: schváleno uživatelem
 
@@ -6,9 +6,9 @@ Datum: 2026-08-25 · Status: schváleno uživatelem
 
 Webová aplikace pro **dynamické QR kódy**: uživatel vytiskne QR kód jednou a kdykoliv
 poté změní jeho cíl v administraci. Vygenerovaný kód obsahuje výhradně krátkou URL
-`https://qrforlife.cz/{hash}`; veškerá logika cíle žije na serveru a je editovatelná.
+`https://qr4life.cz/{hash}`; veškerá logika cíle žije na serveru a je editovatelná.
 
-Doména (pracovně): `qrforlife.cz`.
+Doména (pracovně): `qr4life.cz`.
 
 ## 2. Rozhodnutí
 
@@ -19,7 +19,7 @@ Doména (pracovně): `qrforlife.cz`.
 | Sign in with Apple | Plně implementované, aktivní přes env proměnné (uživatel dodá credentials) |
 | E-mail | Vlastní SMTP (env: host, port, user, pass, from) |
 | Google Safe Browsing | Implementováno za `GOOGLE_SAFE_BROWSING_KEY`; bez klíče běží jen whitelist schémat |
-| Repo | GitHub `bohous04/qrforlife`, public, MIT licence |
+| Repo | GitHub `bohous04/qr4life`, public, MIT licence |
 
 Zvažované alternativy: oddělený mini redirect servis (Hono/Fastify) vedle Next.js —
 odmítnuto, druhý proces/deploy pro ~5 ms teoretický zisk; Cloudflare Worker před
@@ -160,11 +160,11 @@ nepřístupné ani přímým API URL.
 
 ## 14. Nasazení
 
-1. GitHub repo `bohous04/qrforlife`, public, MIT LICENSE, README.
+1. GitHub repo `bohous04/qr4life`, public, MIT LICENSE, README.
 2. LNRT Coolify: PostgreSQL služba + aplikace (Dockerfile, standalone build).
 3. Env proměnné: `DATABASE_URL`, `SESSION_SECRET`, `NEXT_PUBLIC_APP_URL`,
    `SMTP_HOST/PORT/USER/PASS/FROM`, `APPLE_SERVICES_ID/APPLE_TEAM_ID/APPLE_KEY_ID/APPLE_PRIVATE_KEY`,
    `GOOGLE_SAFE_BROWSING_KEY`, `ADMIN_EMAIL` (povýší prvního uživatele na admina).
-4. Doména `qrforlife.cz` po nastavení DNS.
+4. Doména `qr4life.cz` po nastavení DNS.
 
 Mimo rozsah: platby a tarify, vlastní domény zákazníků, týmy, brandované kódy, A/B testy.
