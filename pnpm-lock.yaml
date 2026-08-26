@@ -19,7 +19,7 @@ importers:
         version: 6.2.10
       next:
         specifier: 15.5.24
-        version: 15.5.24(@types/node@20.19.43)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 15.5.24(@playwright/test@1.62.1)(@types/node@20.19.43)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       nodemailer:
         specifier: ^9.0.5
         version: 9.0.5
@@ -39,6 +39,9 @@ importers:
       '@eslint/eslintrc':
         specifier: ^3.3.6
         version: 3.3.6(supports-color@7.2.0)
+      '@playwright/test':
+        specifier: ^1.62.1
+        version: 1.62.1
       '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
@@ -60,6 +63,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.11
         version: 4.1.11(vitest@4.1.11)
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       eslint:
         specifier: ^9.39.5
         version: 9.39.5(jiti@2.7.0)(supports-color@7.2.0)
@@ -526,6 +532,11 @@ packages:
 
   '@oxc-project/types@0.146.0':
     resolution: {integrity: sha512-XC0QsnnhVe7sLIWmYmdPw7x5P0h4W8vUU3Nv1ySgWXtvCz8NizoAEpGXA0sOYoJQV2Rl13LgURAHQ5cI5ILCSA==}
+
+  '@playwright/test@1.62.1':
+    resolution: {integrity: sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   '@prisma/client@6.19.3':
     resolution: {integrity: sha512-mKq3jQFhjvko5LTJFHGilsuQs+W+T3Gm451NzuTDGQxwCzwXHYnIu2zGkRoW+Exq3Rob7yp2MfzSrdIiZVhrBg==}
@@ -1268,6 +1279,10 @@ packages:
 
   dotenv@16.6.1:
     resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
+
+  dotenv@17.4.2:
+    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
     engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
@@ -2991,6 +3006,10 @@ snapshots:
 
   '@oxc-project/types@0.146.0': {}
 
+  '@playwright/test@1.62.1':
+    dependencies:
+      playwright: 1.62.1
+
   '@prisma/client@6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)':
     optionalDependencies:
       prisma: 6.19.3(typescript@5.9.3)
@@ -3681,6 +3700,8 @@ snapshots:
       esutils: 2.0.3
 
   dotenv@16.6.1: {}
+
+  dotenv@17.4.2: {}
 
   dunder-proto@1.0.1:
     dependencies:
@@ -4544,7 +4565,7 @@ snapshots:
 
   natural-compare@1.4.0: {}
 
-  next@15.5.24(@types/node@20.19.43)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  next@15.5.24(@playwright/test@1.62.1)(@types/node@20.19.43)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@next/env': 15.5.24
       '@swc/helpers': 0.5.15
@@ -4562,6 +4583,7 @@ snapshots:
       '@next/swc-linux-x64-musl': 15.5.24
       '@next/swc-win32-arm64-msvc': 15.5.24
       '@next/swc-win32-x64-msvc': 15.5.24
+      '@playwright/test': 1.62.1
       sharp: 0.35.3(@types/node@20.19.43)
     transitivePeerDependencies:
       - '@babel/core'
