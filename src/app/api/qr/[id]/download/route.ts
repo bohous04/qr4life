@@ -5,8 +5,9 @@ import { renderQr } from '@/lib/qr/render';
 import { appUrl } from '@/lib/http';
 
 /**
- * Stažení QR kódu (PNG/SVG). Jen vlastník — cizí id vrací 404,
- * aby nelezlo, které kódy existují.
+ * Stažení QR kódu (PNG/SVG). Jen vlastník, plus admin kvůli náhledům
+ * ve správě — cizí id vrací běžnému uživateli 404, aby nelezlo,
+ * které kódy existují.
  *
  * Kód obsahuje VÝHRADNĚ krátkou redirect URL /{hash} — to je smysl
  * dynamických kódů: vytištěný kód zůstává, cíl se mění v administraci.
@@ -20,7 +21,9 @@ export async function GET(
 
   const { id } = await params;
   const qr = await prisma.qrCode.findUnique({ where: { id } });
-  if (!qr || qr.userId !== user.id) return new Response(null, { status: 404 });
+  if (!qr || (qr.userId !== user.id && user.role !== 'admin')) {
+    return new Response(null, { status: 404 });
+  }
 
   const content = `${appUrl()}/${qr.hash}`;
 

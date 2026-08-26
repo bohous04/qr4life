@@ -282,3 +282,31 @@ test('složky: vytvoření, přesun kódu, filtr, smazání složky', async ({ r
   const qr = await prisma.qrCode.findUniqueOrThrow({ where: { id: qrId } });
   expect(qr.folderId).toBeNull();
 });
+
+test('admin vidí náhled cizího kódu, běžný uživatel ne', async ({ request }) => {
+  const ownerEmail = uniqueEmail();
+  const ownerCookie = await registerAndGetVerifiedCookie(request, ownerEmail);
+  const create = await request.post('/api/qr', {
+    headers: { cookie: ownerCookie },
+    data: { type: 'url', name: 'Admin náhled', payload: { url: 'https://example.com/nahled' } },
+  });
+  const { id } = (await create.json()) as { id: string };
+
+  // Běžný uživatel cizí náhled nedostane
+  const strangerEmail = uniqueEmail();
+  const strangerCookie = await registerAndGetVerifiedCookie(request, strangerEmail);
+  const denied = await request.get(`/api/qr/${id}/download?format=png&size=128`, {
+    headers: { cookie: strangerCookie },
+  });
+  expect(denied.status()).toBe(404);
+
+  // Admin ano — náhledy ve správě musí načíst PNG
+  const adminEmail = uniqueEmail();
+  const adminCookie = await registerAndGetVerifiedCookie(request, adminEmail);
+  await prisma.user.update({ where: { email: adminEmail }, data: { role: 'admin' } });
+  const allowed = await request.get(`/api/qr/${id}/download?format=png&size=128`, {
+    headers: { cookie: adminCookie },
+  });
+  expect(allowed.status()).toBe(200);
+  expect(allowed.headers()['content-type']).toBe('image/png');
+});

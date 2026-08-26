@@ -17,8 +17,6 @@ const bodySchema = z.object({
   payload: z.unknown(),
 });
 
-const QR_TYPES: QrPayloadType[] = ['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text'];
-
 /** Vytvoření nového QR kódu. Vyžaduje přihlášení i ověřený e-mail. */
 export async function POST(request: NextRequest) {
   const user = await getSessionUser(request.cookies.get(SESSION_COOKIE)?.value);
@@ -78,5 +76,3 @@ export async function POST(request: NextRequest) {
   }
   return NextResponse.json({ error: 'hash_collision' }, { status: 500 });
 }
-
-export type { QR_TYPES };

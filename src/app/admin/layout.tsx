@@ -6,9 +6,9 @@ import { SESSION_COOKIE } from '@/lib/auth/session';
 import { AppNav } from '@/components/app-nav';
 import { texts } from '@/lib/i18n/cs';
 
-export const metadata: Metadata = { title: texts.dashboard.title };
+export const metadata: Metadata = { title: texts.admin.title };
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const user = await getSessionUser(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) redirect('/login');

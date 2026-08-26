@@ -105,9 +105,9 @@ export default async function AdminPage({
           name="q"
           defaultValue={q ?? ''}
           placeholder={texts.admin.searchPlaceholder}
-          className={`${filterClass} min-w-0 flex-1 sm:max-w-xs`}
+          className={`${filterClass} w-full min-w-0 sm:w-auto sm:max-w-xs sm:flex-1`}
         />
-        <select name="type" defaultValue={type ?? ''} className={filterClass}>
+        <select name="type" defaultValue={type ?? ''} className={`${filterClass} flex-1 sm:flex-none`}>
           <option value="">{texts.admin.filterAll}</option>
           {TYPES.map((t) => (
             <option key={t} value={t}>
@@ -115,7 +115,7 @@ export default async function AdminPage({
             </option>
           ))}
         </select>
-        <select name="status" defaultValue={status ?? ''} className={filterClass}>
+        <select name="status" defaultValue={status ?? ''} className={`${filterClass} flex-1 sm:flex-none`}>
           <option value="">{texts.admin.filterStatusAll}</option>
           <option value="active">{texts.dashboard.active}</option>
           <option value="paused">{texts.dashboard.paused}</option>
