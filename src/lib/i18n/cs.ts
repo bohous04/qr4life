@@ -1,0 +1,326 @@
+/**
+ * Jediné místo se všemi UI texty aplikace. Komponenty používají výhradně klíče
+ * z tohoto slovníku — angličtina se později doplní jako další soubor.
+ */
+export const texts = {
+  brand: 'QR4Life',
+
+  nav: {
+    login: 'Přihlásit se',
+    register: 'Registrovat',
+    logout: 'Odhlásit se',
+    dashboard: 'Moje kódy',
+    admin: 'Správa',
+    newCode: 'Nový kód',
+  },
+
+  home: {
+    hero: {
+      title: 'Vytiskneš jednou. Měníš kdykoliv.',
+      subtitle:
+        'Dynamické QR kódy, které nikdy nezestárnou. Cíl kódu změňte za pár vteřin — bez tisku nového. Zdarma.',
+      cta: 'Vytvořit první kód zdarma',
+      secondary: 'Jak to funguje',
+      demoCaption: 'Kód vede tam, kam právě potřebuješ. Tečka.',
+    },
+    why: {
+      title: 'Proč dynamický kód',
+      subtitle: 'Statický kód má data zapečená v obrázku. Jedna chyba a jdeš znovu do tiskárny.',
+      staticLabel: 'Statický kód',
+      dynamicLabel: 'QR4Life',
+      points: [
+        {
+          title: 'Překlep v URL',
+          stat: 'Kód tiskneš znovu a všechny vytištěné kusy do koše.',
+          dyn: 'Opravíš cíl za pár vteřin, tištěný kód zůstává.',
+        },
+        {
+          title: 'Změna otevírací doby',
+          stat: 'Cedule u vchodu lže. Nový tisk, nová montáž.',
+          dyn: 'Změníš odkaz a cedule mluví pravdu hned.',
+        },
+        {
+          title: 'Přesun akce',
+          stat: 'Letáky v lidech vedou na staré místo.',
+          dyn: 'Stejný leták vede na nové místo nebo program.',
+        },
+        {
+          title: 'Zrušená stránka',
+          stat: 'Kód vede do prázdna. Mrtvé kódy na každém rohu.',
+          dyn: 'Nasměruješ kód kamkoliv jinam, třeba na domovskou stránku.',
+        },
+      ],
+    },
+    useCases: {
+      title: 'Kde se hodí',
+      subtitle: 'Cokoli, co vytiskneš jednou a svět kolem se mění.',
+      cards: [
+        {
+          title: 'Výloha a cedule',
+          body: 'Aktuální nabídka, menu nebo akce. Měníš denně, kód zůstává.',
+        },
+        {
+          title: 'Stroj a rozvaděč',
+          body: 'Revizní zpráva, manuál a kontakt na servis na jedné nálepce.',
+        },
+        {
+          title: 'Wi-Fi pro hosty',
+          body: 'Heslo k síti v provozovně i na chalupě. Změníš ho a kód platí dál.',
+        },
+        {
+          title: 'Vizitka a auto',
+          body: 'Aktuální kontakt na polepu auta i na vizitce, která už byla rozdána.',
+        },
+        {
+          title: 'Leták a plachta',
+          body: 'Letos program letošního ročníku, příště nový. Tiskneš jen jednou.',
+        },
+        {
+          title: 'Štítek na výrobku',
+          body: 'Návod, záruční podmínky nebo e-shop. Vždy aktuální.',
+        },
+      ],
+    },
+    footerCta: {
+      title: 'Vytiskni jednou, měň navždy.',
+      subtitle: 'Registrace trvá minutu. První kód je zdarma.',
+      login: 'Přihlásit se',
+      register: 'Registrovat',
+    },
+    footer: {
+      copyright: 'QR4Life',
+      github: 'GitHub',
+      madeIn: 'Vytvořeno v Česku',
+    },
+  },
+
+  auth: {
+    register: {
+      title: 'Vytvořit účet',
+      subtitle: 'Minuta registrace a první kód může vznikat.',
+      email: 'E-mail',
+      password: 'Heslo',
+      passwordHint: 'Nejméně 8 znaků.',
+      submit: 'Zaregistrovat se',
+      haveAccount: 'Už účet máš?',
+      loginLink: 'Přihlas se',
+      emailTaken: 'Tento e-mail už je zaregistrovaný.',
+      invalidEmail: 'Zadej platný e-mail.',
+      weakPassword: 'Heslo musí mít nejméně 8 znaků.',
+      rateLimited: 'Moc pokusů. Zkus to za chvíli.',
+      genericError: 'Registrace se nepovedla. Zkus to znovu.',
+      appleButton: 'Pokračovat s Apple',
+      checkEmailTitle: 'Ověř svůj e-mail',
+      checkEmailBody:
+        'Poslali jsme ti odkaz na ověření. Otevři si e-mail a klikni na něj — potom se přihlásíš.',
+      resend: 'Odeslat odkaz znovu',
+      resent: 'Odkaz jsme poslali znovu.',
+    },
+    login: {
+      title: 'Přihlásit se',
+      subtitle: 'Vítej zpátky.',
+      email: 'E-mail',
+      password: 'Heslo',
+      submit: 'Přihlásit se',
+      noAccount: 'Ještě nemáš účet?',
+      registerLink: 'Zaregistruj se',
+      invalid: 'Nesprávný e-mail nebo heslo.',
+      rateLimited: 'Moc pokusů. Zkus to za chvíli.',
+      genericError: 'Přihlášení se nepovedlo. Zkus to znovu.',
+      verifiedBanner: 'E-mail ověřen. Můžeš se přihlásit.',
+      verifyFailedBanner: 'Ověření se nepovedlo. Odkaz už není platný.',
+      forgot: 'Zapomněl jsi heslo?',
+    },
+    verify: {
+      title: 'Ověření e-mailu',
+    },
+    reset: {
+      title: 'Obnovení hesla',
+      email: 'E-mail',
+      requestSubmit: 'Poslat odkaz na obnovení',
+      requestDone:
+        'Pokud e-mail známe, poslali jsme ti odkaz na obnovení hesla. Zkontroluj si schránku.',
+      newPassword: 'Nové heslo',
+      confirmSubmit: 'Nastavit nové heslo',
+      confirmDone: 'Heslo změněno. Přihlas se novým heslem.',
+      invalidToken: 'Odkaz už není platný. Zažádej o nový.',
+      weakPassword: 'Heslo musí mít nejméně 8 znaků.',
+      genericError: 'Něco se pokazilo. Zkus to znovu.',
+      backToLogin: 'Zpět na přihlášení',
+    },
+    logoutFailed: 'Odhlášení se nepovedlo.',
+  },
+
+  dashboard: {
+    title: 'Moje kódy',
+    emptyTitle: 'Zatím žádné kódy',
+    emptyBody: 'Vytvoř si první kód. Vytiskneš ho jednou a cíl měníš kdykoliv.',
+    createFirst: 'Vytvořit první kód',
+    newCode: 'Nový kód',
+    scanCount: 'skeny',
+    scanCountOne: 'sken',
+    scanCountFew: 'skeny',
+    created: 'Vytvořeno',
+    type: 'Typ',
+    downloadPng: 'PNG',
+    downloadSvg: 'SVG',
+    copyLink: 'Zkopírovat odkaz',
+    linkCopied: 'Zkopírováno',
+    active: 'Aktivní',
+    paused: 'Pozastavený',
+    blocked: 'Zablokován',
+    pause: 'Pozastavit',
+    resume: 'Znovu aktivovat',
+    edit: 'Upravit',
+    delete: 'Smazat',
+    deleteConfirmTitle: 'Smazat kód?',
+    deleteConfirmBody:
+      'Smazáním zahodíš všechny vytištěné cedule s tímto kódem. Nikdo, kód naskenuje, se nedostane nikam. Opravdu smazat?',
+    deleteConfirmCancel: 'Nechat být',
+    deleteConfirmSubmit: 'Ano, smazat',
+    verifyFirstTitle: 'Ověř e-mail',
+    verifyFirstBody:
+      'Než vytvoříš první kód, potvrď svůj e-mail. Poslali jsme ti ověřovací odkaz při registraci.',
+    verifyFirstResend: 'Poslat odkaz znovu',
+    saved: 'Uloženo',
+    saveError: 'Uložení se nepovedlo. Zkus to znovu.',
+    createError: 'Vytvoření se nepovedlo. Zkus to znovu.',
+    rateLimited: 'Vytvořil jsi moc kódů najednou. Zkus to za chvíli.',
+    name: {
+      label: 'Název',
+      placeholder: 'Např. Cedule u vchodu',
+      required: 'Zadej název kódu.',
+    },
+    step: {
+      type: 'Typ kódu',
+      data: 'Obsah',
+      name: 'Název',
+    },
+    typeNames: {
+      url: 'Odkaz',
+      wifi: 'Wi-Fi',
+      vcard: 'Vizitka',
+      phone: 'Telefon',
+      sms: 'SMS',
+      email: 'E-mail',
+      text: 'Text',
+    },
+    typeDescriptions: {
+      url: 'Otevře jakoukoli webovou adresu.',
+      wifi: 'Host se připojí na Wi-Fi jedním skenem.',
+      vcard: 'Telefon nabídne uložení kontaktu.',
+      phone: 'Spustí volání na zadané číslo.',
+      sms: 'Otevře novou SMS na zadané číslo.',
+      email: 'Otevře nový e-mail na zadanou adresu.',
+      text: 'Zobrazí prostý text po naskenování.',
+    },
+    fields: {
+      url: 'URL adresa',
+      urlPlaceholder: 'https://example.com',
+      ssid: 'Název sítě (SSID)',
+      wifiPassword: 'Heslo k síti',
+      wifiPasswordEmpty: 'Otevřená síť bez hesla',
+      hidden: 'Skrytá síť',
+      firstName: 'Jméno',
+      lastName: 'Příjmení',
+      org: 'Firma',
+      title: 'Pozice',
+      phone: 'Telefon',
+      phonePlaceholder: '+420 123 456 789',
+      smsBody: 'Text SMS (volitelný)',
+      email: 'E-mail',
+      emailSubject: 'Předmět (volitelný)',
+      emailBody: 'Text zprávy (volitelný)',
+      textContent: 'Text',
+      textPlaceholder: 'Text, který se zobrazí po naskenování…',
+      website: 'Web (volitelný)',
+      address: 'Adresa (volitelný)',
+    },
+    editPage: {
+      title: 'Upravit kód',
+      changeTypeWarning:
+        'Změna typu přepíše obsah kódu. Vytištěný kód zůstává stejný, mění se jen cíl.',
+    },
+    new: {
+      title: 'Nový kód',
+      pickType: 'Co má kód dělat?',
+      continue: 'Pokračovat',
+      back: 'Zpět',
+      create: 'Vytvořit kód',
+      createdTitle: 'Kód je hotový',
+      createdBody: 'Stáhni si PNG nebo SVG a vytiskni. Cíl můžeš měnit kdykoliv.',
+    },
+  },
+
+  admin: {
+    title: 'Správa kódů',
+    subtitle: 'Všechny kódy všech uživatelů.',
+    owner: 'Vlastník',
+    code: 'Kód',
+    status: 'Stav',
+    actions: 'Akce',
+    block: 'Zablokovat',
+    unblock: 'Odblokovat',
+    blockReason: 'Důvod blokace',
+    blockReasonPlaceholder: 'Např. phishing',
+    blockConfirmTitle: 'Zablokovat kód?',
+    blockConfirmBody: 'Naskenování zobrazí stránku o zablokování. Vlastník uvidí důvod.',
+    empty: 'Žádné kódy.',
+    notAdmin: 'Nemáš přístup ke správě.',
+    forbidden: 'Přístup zamítnut.',
+  },
+
+  qr: {
+    status: {
+      inactiveTitle: 'Tento kód je dočasně neaktivní',
+      inactiveBody: 'Vlastník kód pozastavil. Zkuste to později.',
+      blockedTitle: 'Kód byl zablokován',
+      blockedBody: 'Tento kód byl zablokován správce služby.',
+      notFoundTitle: 'Tenhle kód nikde nevidíme',
+      notFoundBody: 'Kód neexistuje, nebo byl smazán. Zkontroluj, že jde o náš kód.',
+      goHome: 'Domovská stránka',
+    },
+    wifi: {
+      title: 'Připoj se na Wi-Fi',
+      network: 'Síť',
+      password: 'Heslo',
+      copy: 'Kopírovat heslo',
+      copied: 'Zkopírováno',
+      openNetwork: 'Otevřená síť — heslo není potřeba',
+      scanHint: 'Naskenuj QR kód na obrazovce a telefon se připojí sám.',
+    },
+    text: {
+      title: 'Zpráva z kódu',
+    },
+    vcardFilename: 'kontakt.vcf',
+  },
+
+  email: {
+    verify: {
+      subject: 'Ověř svůj e-mail na QR4Life',
+      body: 'Vítej v QR4Life!\n\nSvůj e-mail potvrdíš kliknutím na tento odkaz:\n{url}\n\nOdkaz platí 48 hodin. Pokud jsi se neregistroval, tento e-mail ignoruj.',
+    },
+    reset: {
+      subject: 'Obnovení hesla na QR4Life',
+      body: 'Někdo požádal o obnovení hesla k účtu {email}.\n\nNové heslo nastavíš zde:\n{url}\n\nOdkaz platí 1 hodinu. Pokud jsi o obnovení nežádal, tento e-mail ignoruj a heslo nech být.',
+    },
+  },
+
+  common: {
+    error: 'Něco se pokazilo.',
+    loading: 'Načítám…',
+    save: 'Uložit',
+    cancel: 'Zrušit',
+    close: 'Zavřít',
+    yes: 'Ano',
+    no: 'Ne',
+  },
+
+  notFound: {
+    title: 'Tenhle kód nikde nevidíme',
+    body: 'Stránka, kterou hledáš, neexistuje.',
+    goHome: 'Domů',
+  },
+} as const;
+
+export type Texts = typeof texts;

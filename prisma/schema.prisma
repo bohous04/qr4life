@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+enum QrType {
+  url
+  wifi
+  vcard
+  phone
+  sms
+  email
+  text
+}
+
+enum TokenType {
+  verify_email
+  reset_password
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String?
+  appleSub        String?   @unique
+  emailVerifiedAt DateTime?
+  role            UserRole  @default(user)
+  plan            String?
+  createdAt       DateTime  @default(now())
+
+  qrCodes  QrCode[]
+  sessions Session[]
+  tokens   Token[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Token {
+  id        String    @id @default(cuid())
+  userId    String
+  type      TokenType
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+model QrCode {
+  id            String   @id @default(cuid())
+  userId        String
+  hash          String   @unique
+  name          String
+  type          QrType
+  payload       Json
+  isActive      Boolean  @default(true)
+  adminBlocked  Boolean  @default(false)
+  blockedReason String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scans Scan[]
+
+  @@index([userId])
+}
+
+model Scan {
+  id        String   @id @default(cuid())
+  qrCodeId  String
+  scannedAt DateTime @default(now())
+  userAgent String?
+  country   String?
+
+  qrCode QrCode @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@index([qrCodeId, scannedAt])
+}
