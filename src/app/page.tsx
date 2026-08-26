@@ -5,19 +5,23 @@ import { renderQrDataUrl } from '@/lib/qr/render';
 import { appUrl } from '@/lib/http';
 import { texts } from '@/lib/i18n/cs';
 
-/** Ukázkový QR kód — reálný render ze stejné pipeline jako kódy uživatelů. */
+/** Ukázkový QR kód — reálný render v designu značky (jako na OG image). */
 async function DemoQr() {
   const dataUrl = await renderQrDataUrl(appUrl(), 512);
   return (
-    <div className="flex flex-col items-center gap-4">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={dataUrl}
-        alt={texts.qr.previewAlt}
-        width={224}
-        height={224}
-        className="h-56 w-56"
-      />
+    <div className="flex flex-col items-center gap-5">
+      <div className="relative rounded-[28px] bg-ink p-8">
+        {/* oranžový akcent jako na OG image */}
+        <div className="absolute -right-2 -top-2 h-6 w-6 rounded-md bg-accent" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={dataUrl}
+          alt={texts.qr.previewAlt}
+          width={224}
+          height={224}
+          className="h-52 w-52 rounded-xl"
+        />
+      </div>
       <p className="text-sm text-muted">{texts.home.hero.demoCaption}</p>
     </div>
   );
