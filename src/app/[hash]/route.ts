@@ -1,5 +1,4 @@
 import { after, type NextRequest } from 'next/server';
-import QRCode from 'qrcode';
 import { prisma } from '@/lib/db';
 import { resolveScan } from '@/lib/qr/redirect-resolver';
 import {
@@ -9,6 +8,7 @@ import {
   textPageHtml,
   wifiPageHtml,
 } from '@/lib/qr/pages-html';
+import { renderQrDataUrl } from '@/lib/qr/render';
 import { wifiString } from '@/lib/qr/wifi-string';
 import { isReservedPath } from '@/lib/qr/hash';
 
@@ -70,11 +70,7 @@ export async function GET(
     case 'text':
       return htmlResponse(textPageHtml(resolution.text), 200);
     case 'wifi': {
-      const dataUrl = await QRCode.toDataURL(wifiString(resolution.payload), {
-        errorCorrectionLevel: 'M',
-        margin: 2,
-        width: 400,
-      });
+      const dataUrl = await renderQrDataUrl(wifiString(resolution.payload));
       return htmlResponse(wifiPageHtml({ ...resolution.payload, wifiQrDataUrl: dataUrl }), 200);
     }
   }

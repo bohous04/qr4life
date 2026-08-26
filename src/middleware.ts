@@ -3,7 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * CSRF ochrana: měnící požadavky musí mít Origin shodný s hostem.
  * GET požadavky nechází stav, nepodléhají CSRF.
+ * Výjimka: Apple callback (form_post s Origin appleid.apple.com) —
+ * ochranu tam zastoupí podepsaný state v httpOnly cookie.
  */
+const ALLOWED_ORIGINS = new Set(['https://appleid.apple.com']);
+
 export function middleware(request: NextRequest) {
   const method = request.method.toUpperCase();
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
@@ -11,6 +15,9 @@ export function middleware(request: NextRequest) {
   }
   const origin = request.headers.get('origin');
   if (!origin) return NextResponse.next(); // non-browser klienti (curl, aplikace)
+  if (request.nextUrl.pathname === '/api/auth/apple/callback' && ALLOWED_ORIGINS.has(origin)) {
+    return NextResponse.next();
+  }
   const originHost = new URL(origin).host;
   if (originHost === request.headers.get('host')) return NextResponse.next();
   return NextResponse.json({ error: 'forbidden' }, { status: 403 });

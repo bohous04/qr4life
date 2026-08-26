@@ -23,5 +23,7 @@ export async function POST(request: NextRequest) {
 
   const passwordHash = await hashPassword(body.data.password);
   await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  // Zneplatni všechna existující sezení — heslo se změnilo.
+  await prisma.session.deleteMany({ where: { userId } });
   return NextResponse.json({ ok: true });
 }

@@ -130,6 +130,7 @@ export const texts = {
       verifiedBanner: 'E-mail ověřen. Můžeš se přihlásit.',
       verifyFailedBanner: 'Ověření se nepovedlo. Odkaz už není platný.',
       forgot: 'Zapomněl jsi heslo?',
+      appleButton: 'Pokračovat s Apple',
     },
     verify: {
       title: 'Ověření e-mailu',
@@ -175,7 +176,7 @@ export const texts = {
     delete: 'Smazat',
     deleteConfirmTitle: 'Smazat kód?',
     deleteConfirmBody:
-      'Smazáním zahodíš všechny vytištěné cedule s tímto kódem. Nikdo, kód naskenuje, se nedostane nikam. Opravdu smazat?',
+      'Smazáním zahodíš všechny vytištěné cedule s tímto kódem. Kdo kód pak naskenuje, nedostane se nikam. Opravdu smazat?',
     deleteConfirmCancel: 'Nechat být',
     deleteConfirmSubmit: 'Ano, smazat',
     verifyFirstTitle: 'Ověř e-mail',
@@ -292,6 +293,7 @@ export const texts = {
     text: {
       title: 'Zpráva z kódu',
     },
+    previewAlt: 'Náhled QR kódu',
     vcardFilename: 'kontakt.vcf',
   },
 

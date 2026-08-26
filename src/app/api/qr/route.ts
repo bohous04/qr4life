@@ -7,6 +7,7 @@ import { SESSION_COOKIE } from '@/lib/auth/session';
 import { payloadSchema, type QrPayloadType } from '@/lib/qr/payload-schema';
 import { generateHash, isReservedPath } from '@/lib/qr/hash';
 import { hit } from '@/lib/security/rate-limit';
+import { checkSafeBrowsing } from '@/lib/security/safe-browsing';
 import { clientIp, appUrl } from '@/lib/http';
 
 const bodySchema = z.object({
@@ -27,12 +28,23 @@ export async function POST(request: NextRequest) {
   if (hit(`qr-create:${clientIp(request)}`, 30, 60 * 60 * 1000)) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
+  if (hit(`qr-create-user:${user.id}`, 30, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+  }
 
   const body = bodySchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: 'invalid' }, { status: 400 });
 
   const payload = payloadSchema(body.data.type as QrPayloadType, body.data.payload);
   if (!payload) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
+
+  // Safe Browsing při uložení (bez klíče okamžitě 'ok')
+  if (body.data.type === 'url') {
+    const target = (payload as { url: string }).url;
+    if ((await checkSafeBrowsing(target)) === 'unsafe') {
+      return NextResponse.json({ error: 'unsafe_url' }, { status: 400 });
+    }
+  }
 
   // Kolize hashe: retry na unique constraint (P2002), max 5 pokusů.
   for (let attempt = 0; attempt < 5; attempt++) {

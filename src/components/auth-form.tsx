@@ -115,7 +115,7 @@ export function AuthForm({ mode, appleEnabled }: { mode: Mode; appleEnabled?: bo
           href="/api/auth/apple"
           className="mt-3 block w-full rounded-md border border-ink py-2.5 text-center font-medium hover:bg-line/40"
         >
-          {texts.auth.register.appleButton}
+          {texts.auth.login.appleButton}
         </Link>
       )}
 

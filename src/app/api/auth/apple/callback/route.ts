@@ -18,7 +18,11 @@ function stateValid(cookieState: string | undefined, formState: string): boolean
   const expected = createHmac('sha256', process.env.SESSION_SECRET ?? 'dev')
     .update(nonce)
     .digest('base64url');
-  return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  try {
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  } catch {
+    return false; // různé délky podpisu → neplatný state
+  }
 }
 
 /** Apple posílá code+state POSTem (response_mode=form_post). */

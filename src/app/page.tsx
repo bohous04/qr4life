@@ -8,7 +8,7 @@ function DemoQr() {
   return (
     <div className="flex flex-col items-center gap-4">
       {/* 25×25 finder-pattern imitace; reálné kódy renderuje server (lib/qr/render) */}
-      <svg viewBox="0 0 29 29" className="h-56 w-56 text-ink" role="img" aria-label="QR kód">
+      <svg viewBox="0 0 29 29" className="h-56 w-56 text-ink" role="img" aria-label={texts.qr.previewAlt}>
         <rect width="29" height="29" fill="none" />
         {[
           [0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0],

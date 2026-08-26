@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth/session';
 import { SESSION_COOKIE } from '@/lib/auth/session';
 import { payloadSchema, type QrPayloadType } from '@/lib/qr/payload-schema';
+import { checkSafeBrowsing } from '@/lib/security/safe-browsing';
 
 const patchSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
@@ -33,6 +34,14 @@ export async function PATCH(
       ? payloadSchema(type, body.data.payload)
       : payloadSchema(type, qr.payload);
   if (!payload) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
+
+  // Safe Browsing i při změně cíle
+  if (type === 'url') {
+    const target = (payload as { url: string }).url;
+    if ((await checkSafeBrowsing(target)) === 'unsafe') {
+      return NextResponse.json({ error: 'unsafe_url' }, { status: 400 });
+    }
+  }
 
   const updated = await prisma.qrCode.update({
     where: { id: qr.id },

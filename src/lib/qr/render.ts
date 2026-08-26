@@ -20,6 +20,15 @@ export async function renderQr(
   return QRCode.toBuffer(content, { ...options, type: 'png' });
 }
 
+/** Data URI pro vložení do HTML (Wi-Fi stránka). */
+export async function renderQrDataUrl(content: string, size = 400): Promise<string> {
+  return QRCode.toDataURL(content, {
+    errorCorrectionLevel: 'M',
+    margin: 2,
+    width: size,
+  });
+}
+
 /** Obsah QR kódu podle typu (co se fyzicky zakóduje do obrázku). */
 export function qrContent(type: string, payload: unknown): string | null {
   const p = payload as Record<string, unknown>;

@@ -1,24 +1,18 @@
 import { z } from 'zod';
+import { assertSafeHttpUrl } from '@/lib/security/url-safety';
 
 /**
  * Payload každého typu QR kódu. Validace Zod schématem podle typu —
  * data žijí v JSONB, struktura je tu.
  */
 
-/** Povolená http/https URL (ostatní schémata mají vlastní typy kódu). */
+/** Povolená http/https URL bez credentials (ostatní schémata mají vlastní typy kódu). */
 const httpUrl = z
   .string()
   .trim()
   .min(1)
   .max(2048)
-  .refine((raw) => {
-    try {
-      const parsed = new URL(raw);
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-    } catch {
-      return false;
-    }
-  }, 'URL musí začínat http:// nebo https://');
+  .refine((raw) => assertSafeHttpUrl(raw) !== null, 'URL musí začínat http:// nebo https://');
 
 const phone = z
   .string()

@@ -11,7 +11,7 @@ export default function VerifyInfoPage() {
 
   async function resend() {
     if (!email) return;
-    await fetch('/api/auth/reset/request', {
+    await fetch('/api/auth/resend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
