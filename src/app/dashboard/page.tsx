@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth/session';
 import { SESSION_COOKIE } from '@/lib/auth/session';
 import { QrCard } from '@/components/qr-card';
+import { DashboardRefresher } from '@/components/dashboard-refresher';
 import { texts } from '@/lib/i18n/cs';
 
 export default async function DashboardPage() {
@@ -19,6 +20,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      <DashboardRefresher />
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-3xl font-bold tracking-tight">{texts.dashboard.title}</h1>
         <Link
