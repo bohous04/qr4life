@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#141210"/>
+  <g>
+    <!-- 5×5 mřížka: moduly bílé, akcent #FF4A00 -->
+    <rect x="11" y="11" width="7" height="7" rx="1.5" fill="#FDFCFA"/>
+    <rect x="21" y="11" width="7" height="7" rx="1.5" fill="#FDFCFA"/>
+    <rect x="41" y="11" width="7" height="7" rx="1.5" fill="#FF4A00"/>
+    <rect x="11" y="21" width="7" height="7" rx="1.5" fill="#FDFCFA"/>
+    <rect x="31" y="21" width="7" height="7" rx="1.5" fill="#FDFCFA"/>
+    <rect x="51" y="21" width="7" height="7" rx="1.5" fill="#FDFCFA"/>
+    <rect x="21" y="31" width="7" height="7" rx="1.5" fill="#FF4A00"/>
+    <rect x="41" y="31" width="7" height="7" rx="1.5" fill="#FDFCFA"/>
+    <rect x="11" y="41" width="7" height="7" rx="1.5" fill="#FDFCFA"/>
+    <rect x="31" y="41" width="7" height="7" rx="1.5" fill="#FDFCFA"/>
+    <rect x="11" y="51" width="7" height="7" rx="1.5" fill="#FF4A00"/>
+    <rect x="21" y="51" width="7" height="7" rx="1.5" fill="#FDFCFA"/>
+    <rect x="41" y="51" width="7" height="7" rx="1.5" fill="#FDFCFA"/>
+  </g>
+</svg>

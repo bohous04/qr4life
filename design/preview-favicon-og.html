@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>QR4Life — favicon + OG náhled</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#F0EEEA; padding:40px; color:#141210; }
+  h2 { font-size:14px; text-transform:uppercase; letter-spacing:.1em; color:#57534E; margin:32px 0 12px; }
+
+  /* ---- favicon mark ---- */
+  .mark { position:relative; width:64px; height:64px; background:#141210; border-radius:14px; display:grid; grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(5,1fr); padding:9px; gap:2px; }
+  .mark.small { width:32px; height:32px; border-radius:8px; padding:5px; gap:1px; }
+  .mark i { background:#FDFCFA; border-radius:1.5px; }
+  .mark i.a { background:#FF4A00; }
+  .mark i.off { background:transparent; }
+  .row { display:flex; align-items:flex-end; gap:24px; }
+  .cell { text-align:center; }
+  .cell span { display:block; margin-top:6px; font-size:11px; color:#A8A29E; }
+  .browser { display:flex; align-items:center; gap:8px; background:#fff; border-radius:8px 8px 0 0; padding:8px 12px; width:340px; box-shadow:0 1px 4px rgba(0,0,0,.12); }
+  .browser b { font-size:13px; font-weight:500; }
+  .browser .mark { width:18px; height:18px; border-radius:4px; padding:2px; gap:1px; }
+
+  /* ---- OG 1200×630 ---- */
+  .og { width:1200px; height:630px; background:#FDFCFA; position:relative; overflow:hidden;
+        display:flex; flex-direction:column; justify-content:center; padding:0 90px; }
+  .og .logo { position:absolute; top:64px; left:90px; font-weight:800; font-size:30px; letter-spacing:.04em; }
+  .og .logo span { color:#FF4A00; }
+  .og h1 { font-size:82px; line-height:1.06; letter-spacing:-.03em; font-weight:800; max-width:700px; }
+  .og h1 em { font-style:normal; color:#FF4A00; }
+  .og p { margin-top:26px; font-size:27px; color:#57534E; max-width:620px; line-height:1.35; }
+  .og .qr { position:absolute; right:90px; top:50%; transform:translateY(-50%); width:270px; height:270px;
+            background:#141210; border-radius:26px; padding:40px; display:grid; grid-template-columns:repeat(7,1fr); grid-template-rows:repeat(7,1fr); gap:6px; }
+  .og .qr i { background:#FDFCFA; border-radius:3px; }
+  .og .qr i.a { background:#FF4A00; }
+  .og .qr i.off { background:transparent; }
+  .og .url { position:absolute; bottom:56px; left:90px; font-size:24px; color:#A8A29E; letter-spacing:.02em; }
+</style>
+</head>
+<body>
+
+<h2>Favicon — 64 px / 32 px / v prohlížeči</h2>
+<div class="row">
+  <div class="cell"><div class="mark">
+    <i></i><i></i><i class="off"></i><i></i><i class="a"></i>
+    <i></i><i class="off"></i><i></i><i class="off"></i><i></i>
+    <i class="off"></i><i></i><i class="a"></i><i class="off"></i><i></i>
+    <i></i><i class="off"></i><i></i><i class="off"></i><i></i>
+    <i class="a"></i><i></i><i class="off"></i><i></i><i></i>
+  </div><span>64 px</span></div>
+  <div class="cell"><div class="mark small">
+    <i></i><i></i><i class="off"></i><i></i><i class="a"></i>
+    <i></i><i class="off"></i><i></i><i class="off"></i><i></i>
+    <i class="off"></i><i></i><i class="a"></i><i class="off"></i><i></i>
+    <i></i><i class="off"></i><i></i><i class="off"></i><i></i>
+    <i class="a"></i><i></i><i class="off"></i><i></i><i></i>
+  </div><span>32 px</span></div>
+  <div class="cell">
+    <div class="browser"><div class="mark">
+      <i></i><i></i><i class="off"></i><i></i><i class="a"></i>
+      <i></i><i class="off"></i><i></i><i class="off"></i><i></i>
+      <i class="off"></i><i></i><i class="a"></i><i class="off"></i><i></i>
+      <i></i><i class="off"></i><i></i><i class="off"></i><i></i>
+      <i class="a"></i><i></i><i class="off"></i><i></i><i></i>
+    </div><b>QR4Life — dynamické QR kódy</b></div>
+    <span style="margin-top:6px;font-size:11px;color:#A8A29E">tab prohlížeče</span>
+  </div>
+</div>
+
+<h2>OG image — 1200 × 630 (náhled sdíleného odkazu)</h2>
+<div class="og">
+  <div class="logo">QR<span>4</span>LIFE</div>
+  <h1>Vytiskneš <em>jednou</em>.<br>Měníš <em>kdykoliv</em>.</h1>
+  <p>Dynamické QR kódy, které nikdy nezestárnou. Cíl změňte za pár vteřin — bez tisku nového.</p>
+  <div class="url">qr.lnrtdev.cz</div>
+  <div class="qr">
+    <i></i><i></i><i></i><i class="off"></i><i></i><i></i><i class="a"></i>
+    <i></i><i class="off"></i><i></i><i class="off"></i><i></i><i class="off"></i><i></i>
+    <i></i><i></i><i></i><i class="off"></i><i></i><i></i><i class="off"></i>
+    <i class="off"></i><i class="off"></i><i class="off"></i><i class="a"></i><i class="off"></i><i class="off"></i><i class="off"></i>
+    <i></i><i></i><i></i><i class="off"></i><i></i><i></i><i></i>
+    <i></i><i class="off"></i><i></i><i class="off"></i><i></i><i class="off"></i><i></i>
+    <i class="a"></i><i></i><i class="off"></i><i class="off"></i><i></i><i></i><i></i>
+  </div>
+</div>
+
+</body>
+</html>
