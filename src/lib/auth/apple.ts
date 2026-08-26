@@ -29,8 +29,15 @@ export function appleEnv(): AppleEnv | null {
   const keyId = process.env.APPLE_KEY_ID;
   const rawKey = process.env.APPLE_PRIVATE_KEY;
   if (!servicesId || !teamId || !keyId || !rawKey) return null;
-  // Env proměnné občas zničí nové řádky — podporujeme i \\n escapování.
-  const privateKey = rawKey.includes('\\n') ? rawKey.replace(/\\n/g, '\n') : rawKey;
+  // Coolify multiline env obalí hodnotu uvozovkami; odstraníme je + podporíme \\n.
+  let privateKey = rawKey.trim();
+  if (
+    (privateKey.startsWith("'") && privateKey.endsWith("'")) ||
+    (privateKey.startsWith('"') && privateKey.endsWith('"'))
+  ) {
+    privateKey = privateKey.slice(1, -1);
+  }
+  privateKey = privateKey.includes('\\n') ? privateKey.replace(/\\n/g, '\n') : privateKey;
   if (!privateKey.includes('PRIVATE KEY')) return null;
   return { servicesId, teamId, keyId, privateKey };
 }
