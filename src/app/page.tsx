@@ -1,47 +1,23 @@
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { renderQrDataUrl } from '@/lib/qr/render';
+import { appUrl } from '@/lib/http';
 import { texts } from '@/lib/i18n/cs';
 
-/** Ukázkový QR kód — statický SVG placeholder v duchu značky. */
-function DemoQr() {
+/** Ukázkový QR kód — reálný render ze stejné pipeline jako kódy uživatelů. */
+async function DemoQr() {
+  const dataUrl = await renderQrDataUrl(appUrl(), 512);
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* 25×25 finder-pattern imitace; reálné kódy renderuje server (lib/qr/render) */}
-      <svg viewBox="0 0 29 29" className="h-56 w-56 text-ink" role="img" aria-label={texts.qr.previewAlt}>
-        <rect width="29" height="29" fill="none" />
-        {[
-          [0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0],
-          [0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1],
-          [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2],
-          [0, 3], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3], [6, 3],
-          [0, 4], [1, 4], [2, 4], [3, 4], [4, 4], [5, 4], [6, 4],
-          [0, 5], [1, 5], [2, 5], [3, 5], [4, 5], [5, 5], [6, 5],
-          [0, 6], [1, 6], [2, 6], [3, 6], [4, 6], [5, 6], [6, 6],
-        ].map(([x, y]) => (
-          <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="currentColor" />
-        ))}
-        <rect x="8" y="0" width="1" height="1" fill="currentColor" />
-        <rect x="10" y="1" width="1" height="1" fill="currentColor" />
-        <rect x="9" y="3" width="1" height="1" fill="currentColor" />
-        <rect x="12" y="2" width="1" height="1" fill="currentColor" />
-        <rect x="11" y="5" width="1" height="1" fill="currentColor" />
-        <rect x="13" y="4" width="1" height="1" fill="currentColor" />
-        <rect x="14" y="6" width="1" height="1" fill="currentColor" />
-        <rect x="14" y="14" width="1" height="1" fill="currentColor" />
-        <rect x="15" y="13" width="1" height="1" fill="currentColor" />
-        <rect x="13" y="15" width="1" height="1" fill="currentColor" />
-        <rect x="16" y="15" width="1" height="1" fill="currentColor" />
-        <rect x="14" y="16" width="1" height="1" fill="currentColor" />
-        <rect x="17" y="14" width="1" height="1" fill="currentColor" />
-        <rect x="15" y="17" width="1" height="1" fill="currentColor" />
-        <rect x="22" y="0" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1" />
-        <rect x="24" y="2" width="3" height="3" fill="currentColor" />
-        <rect x="22" y="22" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1" />
-        <rect x="24" y="24" width="3" height="3" fill="currentColor" />
-        <rect x="0" y="22" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1" />
-        <rect x="2" y="24" width="3" height="3" fill="currentColor" />
-      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={dataUrl}
+        alt={texts.qr.previewAlt}
+        width={224}
+        height={224}
+        className="h-56 w-56"
+      />
       <p className="text-sm text-muted">{texts.home.hero.demoCaption}</p>
     </div>
   );
