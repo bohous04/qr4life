@@ -21,7 +21,7 @@ describe('hit', () => {
   });
 
   it('klíče jsou nezávislé', () => {
-    let now = 3000;
+    const now = 3000;
     expect(hit('a', 1, 1000, () => now)).toBe(false);
     expect(hit('b', 1, 1000, () => now)).toBe(false);
   });
