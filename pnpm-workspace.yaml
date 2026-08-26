@@ -3,9 +3,6 @@ allowBuilds:
   '@prisma/engines': true
   prisma: true
   unrs-resolver: true
-overrides:
-  deepmerge-ts: 8.0.0
-  postcss: 8.5.26
 minimumReleaseAgeExclude:
   - '@next/env@15.5.24'
   - '@next/eslint-plugin-next@15.5.24'
