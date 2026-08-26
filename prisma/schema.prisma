@@ -98,3 +98,13 @@ model Scan {
 
   @@index([qrCodeId, scannedAt])
 }
+
+model ErrorLog {
+  id        String   @id @default(cuid())
+  level     String   @default("error")
+  message   String
+  context   String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

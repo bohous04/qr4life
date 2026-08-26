@@ -8,6 +8,7 @@ import { payloadSchema, type QrPayloadType } from '@/lib/qr/payload-schema';
 import { generateHash, isReservedPath } from '@/lib/qr/hash';
 import { hit } from '@/lib/security/rate-limit';
 import { checkSafeBrowsing } from '@/lib/security/safe-browsing';
+import { logError } from '@/lib/log-error';
 import { clientIp, appUrl } from '@/lib/http';
 
 const bodySchema = z.object({
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       ) {
         continue;
       }
+      await logError(`Vytvoření kódu selhalo: ${error instanceof Error ? error.message : String(error)}`, 'POST /api/qr');
       throw error;
     }
   }

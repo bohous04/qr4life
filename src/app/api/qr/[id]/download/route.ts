@@ -1,12 +1,15 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getSessionUser } from '@/lib/auth/session';
-import { SESSION_COOKIE } from '@/lib/auth/session';
-import { qrContent, renderQr } from '@/lib/qr/render';
+import { getSessionUser, SESSION_COOKIE } from '@/lib/auth/session';
+import { renderQr } from '@/lib/qr/render';
+import { appUrl } from '@/lib/http';
 
 /**
  * Stažení QR kódu (PNG/SVG). Jen vlastník — cizí id vrací 404,
  * aby nelezlo, které kódy existují.
+ *
+ * Kód obsahuje VÝHRADNĚ krátkou redirect URL /{hash} — to je smysl
+ * dynamických kódů: vytištěný kód zůstává, cíl se mění v administraci.
  */
 export async function GET(
   request: NextRequest,
@@ -19,8 +22,7 @@ export async function GET(
   const qr = await prisma.qrCode.findUnique({ where: { id } });
   if (!qr || qr.userId !== user.id) return new Response(null, { status: 404 });
 
-  const content = qrContent(qr.type, qr.payload);
-  if (!content) return new Response(null, { status: 404 });
+  const content = `${appUrl()}/${qr.hash}`;
 
   const format = request.nextUrl.searchParams.get('format') === 'svg' ? 'svg' : 'png';
   const sizeParam = Number(request.nextUrl.searchParams.get('size') ?? 512);

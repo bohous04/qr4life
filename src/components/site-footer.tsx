@@ -33,7 +33,7 @@ export function SiteFooter() {
           >
             {texts.home.footer.github}
           </a>
-          <span>{texts.home.footer.madeIn}</span>
+          <span>{texts.common.credit}</span>
         </div>
       </div>
     </footer>

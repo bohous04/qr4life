@@ -17,8 +17,10 @@ const CSS = `
   a.button,button.button{display:inline-block;background:#FF4A00;color:#fff;border:0;
     font-size:16px;font-weight:600;padding:12px 20px;border-radius:6px;
     text-decoration:none;cursor:pointer;margin-top:8px}
-  .logo{font-weight:700;font-size:14px;letter-spacing:0.06em;margin-bottom:28px}
+  .logo{font-weight:700;font-size:14px;letter-spacing:0.06em;margin-bottom:28px;
+    display:inline-block;text-decoration:none;color:#141210}
   .logo span{color:#FF4A00}
+  .credit{margin-top:36px;font-size:12px;color:#A8A29E;text-align:center}
   .row{display:flex;justify-content:space-between;align-items:center;gap:12px;
     padding:14px 0;border-top:1px solid #E7E5E4}
   .row:first-of-type{border-top:0}
@@ -40,8 +42,9 @@ function page(title: string, body: string): string {
 </head>
 <body>
 <div class="card">
-<div class="logo">QR<span>4</span>LIFE</div>
+<a class="logo" href="/">QR<span>4</span>LIFE</a>
 ${body}
+<p class="credit">${texts.common.credit}</p>
 </div>
 </body>
 </html>`;

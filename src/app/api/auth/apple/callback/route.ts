@@ -7,6 +7,7 @@ import {
   verifyIdToken,
 } from '@/lib/auth/apple';
 import { SESSION_COOKIE, createSession } from '@/lib/auth/session';
+import { logError } from '@/lib/log-error';
 import { appUrl } from '@/lib/http';
 
 const STATE_COOKIE = 'qfl_apple_state';
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
   const redirectUri = `${appUrl()}/api/auth/apple/callback`;
   const tokens = await exchangeCode(env, code, redirectUri);
   if (!tokens) {
+    await logError('Apple token exchange selhal', 'apple/callback');
     return NextResponse.redirect(new URL('/login?apple=exchange', appUrl()), 302);
   }
 
@@ -67,7 +69,8 @@ export async function POST(request: NextRequest) {
     });
     response.cookies.delete(STATE_COOKIE);
     return response;
-  } catch {
+  } catch (error) {
+    await logError(`Apple id_token verifikace selhala: ${error instanceof Error ? error.message : String(error)}`, 'apple/callback');
     return NextResponse.redirect(new URL('/login?apple=token', appUrl()), 302);
   }
 }

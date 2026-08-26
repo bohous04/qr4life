@@ -90,7 +90,7 @@ export const texts = {
     footer: {
       copyright: 'QR4Life',
       github: 'GitHub',
-      madeIn: 'Vytvořeno v Česku',
+      credit: 'Vytvořeno LNRT · Příště jako vždycky',
     },
   },
 
@@ -153,7 +153,7 @@ export const texts = {
   },
 
   dashboard: {
-    title: 'Moje kódy',
+    title: 'Moje QR kódy',
     emptyTitle: 'Zatím žádné kódy',
     emptyBody: 'Vytvoř si první kód. Vytiskneš ho jednou a cíl měníš kdykoliv.',
     createFirst: 'Vytvořit první kód',
@@ -260,6 +260,16 @@ export const texts = {
     code: 'Kód',
     status: 'Stav',
     actions: 'Akce',
+    filterAll: 'Všechny typy',
+    filterStatusAll: 'Všechny stavy',
+    filterSubmit: 'Filtrovat',
+    searchPlaceholder: 'Hledat podle názvu, hashe nebo e-mailu…',
+    logsTitle: 'Logy chyb',
+    logsEmpty: 'Žádné chyby. Klid.',
+    logsLevel: 'Úroveň',
+    logsWhen: 'Kdy',
+    logsMessage: 'Zpráva',
+    logsContext: 'Kontext',
     block: 'Zablokovat',
     unblock: 'Odblokovat',
     blockReason: 'Důvod blokace',
@@ -316,6 +326,7 @@ export const texts = {
     close: 'Zavřít',
     yes: 'Ano',
     no: 'Ne',
+    credit: 'Vytvořeno LNRT · Příště jako vždycky',
   },
 
   notFound: {

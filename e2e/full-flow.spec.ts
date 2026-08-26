@@ -216,3 +216,25 @@ test('javascript: URL se odmítne', async ({ request }) => {
   });
   expect(create.status()).toBe(400);
 });
+
+test('stažený QR se nemění se změnou cíle (kóduje jen /{hash})', async ({ request }) => {
+  const email = uniqueEmail();
+  const cookie = await registerAndGetVerifiedCookie(request, email);
+  const create = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'url', name: 'Dynamický', payload: { url: 'https://example.com/verze-1' } },
+  });
+  const { id } = (await create.json()) as { id: string };
+
+  const before = await (await request.get(`/api/qr/${id}/download?format=png`, { headers: { cookie } })).body();
+
+  await request.patch(`/api/qr/${id}`, {
+    headers: { cookie },
+    data: { type: 'wifi', payload: { ssid: 'ZmenaTypu', password: '12345678', hidden: false } },
+  });
+
+  const after = await (await request.get(`/api/qr/${id}/download?format=png`, { headers: { cookie } })).body();
+
+  // Vytištěný kód je vždy stejný — mění se jen cíl na serveru.
+  expect(before.equals(after)).toBe(true);
+});
