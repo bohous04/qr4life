@@ -46,7 +46,11 @@ export async function GET(
   after(() =>
     prisma.scan
       .create({
-        data: { qrCodeId: qr.id, userAgent: _request.headers.get('user-agent')?.slice(0, 512) },
+        data: {
+          qrCodeId: qr.id,
+          userAgent: _request.headers.get('user-agent')?.slice(0, 512),
+          country: _request.headers.get('cf-ipcountry'),
+        },
       })
       .catch(() => undefined),
   );
