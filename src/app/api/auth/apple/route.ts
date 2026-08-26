@@ -23,8 +23,10 @@ export async function GET() {
   const response = NextResponse.redirect(authorizeUrl(env, redirectUri, state), 302);
   response.cookies.set(STATE_COOKIE, state, {
     httpOnly: true,
+    // SameSite=None je nutný: Apple posílá callback cross-site POSTem,
+    // Lax cookie by se neposlala a state validace by selhala.
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
     maxAge: 600,
   });
