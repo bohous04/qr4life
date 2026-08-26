@@ -341,7 +341,8 @@ export const texts = {
     close: 'Zavřít',
     yes: 'Ano',
     no: 'Ne',
-    credit: 'Vytvořeno LNRT · Příště jako vždycky',
+    credit: 'Vytvořeno LNRT',
+    creditUrl: 'https://lnrt.cz',
   },
 
   notFound: {

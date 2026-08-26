@@ -20,7 +20,9 @@ const CSS = `
   .logo{font-weight:700;font-size:14px;letter-spacing:0.06em;margin-bottom:28px;
     display:inline-block;text-decoration:none;color:#141210}
   .logo span{color:#FF4A00}
-  .credit{margin-top:36px;font-size:12px;color:#A8A29E;text-align:center}
+  .credit{margin-top:36px;font-size:12px;text-align:center}
+  .credit a{color:#A8A29E;text-decoration:none}
+  .credit a:hover{color:#57534E}
   .row{display:flex;justify-content:space-between;align-items:center;gap:12px;
     padding:14px 0;border-top:1px solid #E7E5E4}
   .row:first-of-type{border-top:0}
@@ -44,7 +46,7 @@ function page(title: string, body: string): string {
 <div class="card">
 <a class="logo" href="/">QR<span>4</span>LIFE</a>
 ${body}
-<p class="credit">${texts.common.credit}</p>
+<p class="credit"><a href="${texts.common.creditUrl}" target="_blank" rel="noreferrer">${texts.common.credit}</a></p>
 </div>
 </body>
 </html>`;

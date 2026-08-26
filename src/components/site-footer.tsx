@@ -33,7 +33,9 @@ export function SiteFooter() {
           >
             {texts.home.footer.github}
           </a>
-          <span>{texts.common.credit}</span>
+          <a href={texts.common.creditUrl} target="_blank" rel="noreferrer" className="hover:text-ink">
+            {texts.common.credit}
+          </a>
         </div>
       </div>
     </footer>
