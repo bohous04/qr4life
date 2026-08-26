@@ -1,7 +1,13 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { getSessionUser } from '@/lib/auth/session';
+import { SESSION_COOKIE } from '@/lib/auth/session';
 import { texts } from '@/lib/i18n/cs';
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const cookieStore = await cookies();
+  const user = await getSessionUser(cookieStore.get(SESSION_COOKIE)?.value);
+
   return (
     <footer className="border-t border-line">
       <div className="mx-auto w-full max-w-6xl px-6 py-16 text-center">
@@ -10,18 +16,29 @@ export function SiteFooter() {
         </h2>
         <p className="mt-3 text-muted">{texts.home.footerCta.subtitle}</p>
         <div className="mt-8 flex items-center justify-center gap-3">
-          <Link
-            href="/login"
-            className="rounded-md border border-line px-5 py-2.5 text-sm font-medium hover:bg-line/40"
-          >
-            {texts.home.footerCta.login}
-          </Link>
-          <Link
-            href="/register"
-            className="rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
-          >
-            {texts.home.footerCta.register}
-          </Link>
+          {user ? (
+            <Link
+              href="/dashboard"
+              className="rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+            >
+              {texts.nav.dashboard}
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="rounded-md border border-line px-5 py-2.5 text-sm font-medium hover:bg-line/40"
+              >
+                {texts.home.footerCta.login}
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+              >
+                {texts.home.footerCta.register}
+              </Link>
+            </>
+          )}
         </div>
         <div className="mt-16 flex flex-col items-center justify-between gap-4 text-sm text-muted md:flex-row">
           <span>© {new Date().getFullYear()} {texts.home.footer.copyright}</span>

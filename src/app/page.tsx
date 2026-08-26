@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { getSessionUser } from '@/lib/auth/session';
+import { SESSION_COOKIE } from '@/lib/auth/session';
 import { renderQrDataUrl } from '@/lib/qr/render';
 import { appUrl } from '@/lib/http';
 import { texts } from '@/lib/i18n/cs';
@@ -27,7 +30,11 @@ async function DemoQr() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const cookieStore = await cookies();
+  const user = await getSessionUser(cookieStore.get(SESSION_COOKIE)?.value);
+  const primaryCtaHref = user ? '/dashboard/new' : '/register';
+
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -42,10 +49,10 @@ export default function Home() {
             <p className="mt-6 max-w-md text-lg text-muted">{texts.home.hero.subtitle}</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="/register"
+                href={primaryCtaHref}
                 className="rounded-md bg-accent px-6 py-3 font-semibold text-white hover:opacity-90"
               >
-                {texts.home.hero.cta}
+                {user ? texts.nav.newCode : texts.home.hero.cta}
               </Link>
               <a
                 href="#proc"
