@@ -11,6 +11,7 @@ const patchSchema = z.object({
   type: z.enum(['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text']).optional(),
   payload: z.unknown().optional(),
   isActive: z.boolean().optional(),
+  folderId: z.string().cuid().nullable().optional(),
 });
 
 /** Změna kódu — jen vlastník (cizí id → 404, netesení existence). */
@@ -35,6 +36,20 @@ export async function PATCH(
       : payloadSchema(type, qr.payload);
   if (!payload) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
 
+  // Složka musí patřit uživateli (nebo null = bez složky)
+  let folderId: string | null | undefined;
+  if (body.data.folderId !== undefined) {
+    if (body.data.folderId === null) {
+      folderId = null;
+    } else {
+      const folder = await prisma.folder.findUnique({ where: { id: body.data.folderId } });
+      if (!folder || folder.userId !== user.id) {
+        return NextResponse.json({ error: 'invalid_folder' }, { status: 400 });
+      }
+      folderId = folder.id;
+    }
+  }
+
   // Safe Browsing i při změně cíle
   if (type === 'url') {
     const target = (payload as { url: string }).url;
@@ -50,6 +65,7 @@ export async function PATCH(
       ...(body.data.type !== undefined ? { type: body.data.type } : {}),
       payload: payload as object,
       ...(body.data.isActive !== undefined ? { isActive: body.data.isActive } : {}),
+      ...(folderId !== undefined ? { folderId } : {}),
     },
   });
   return NextResponse.json({ ok: true, isActive: updated.isActive });

@@ -95,7 +95,8 @@ function buildPayload(type: QrTypeKey, state: PayloadState): unknown {
 }
 
 /**
- * Kroky 1–3 průvodce novým kódem, nebo editační formulář (kdy je typeFixed).
+ * Kroky 1–3 průvodce novým kódem, nebo editační formulář
+ * (v editaci lze typ změnit — obsah se přepíše, hash zůstává).
  * Volající dostane {type, name, payload} k odeslání na API.
  */
 export function QrTypeForm({
@@ -103,7 +104,6 @@ export function QrTypeForm({
   initialType,
   initialName,
   initialPayload,
-  typeFixed,
   submitLabel,
   onSubmit,
 }: {
@@ -111,13 +111,12 @@ export function QrTypeForm({
   initialType?: QrTypeKey;
   initialName?: string;
   initialPayload?: unknown;
-  typeFixed?: boolean;
   submitLabel: string;
   onSubmit: (data: { type: QrTypeKey; name: string; payload: unknown }) => Promise<string | null>;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState(typeFixed ? (mode === 'edit' ? 3 : 2) : 1);
-  const [type, setType] = useState<QrTypeKey | null>(initialType ?? null);
+  const [step, setStep] = useState(mode === 'edit' ? 2 : 1);
+  const [type, setType] = useState<QrTypeKey>(initialType ?? 'url');
   const [payload, setPayload] = useState<PayloadState>(
     () => ({ ...emptyPayload[initialType ?? 'url'], ...(initialPayload as PayloadState | undefined) }),
   );
@@ -125,13 +124,18 @@ export function QrTypeForm({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const activeType = type ?? 'url';
+  const activeType = type;
   const fields = FIELDS_BY_TYPE[activeType];
 
   function pickType(next: QrTypeKey) {
     setType(next);
     setPayload({ ...emptyPayload[next] });
     setStep(2);
+  }
+
+  function changeTypeEdit(next: QrTypeKey) {
+    setType(next);
+    setPayload({ ...emptyPayload[next] });
   }
 
   async function submit(event: { preventDefault(): void }) {
@@ -224,7 +228,7 @@ export function QrTypeForm({
 
   return (
     <form onSubmit={submit} className="max-w-md space-y-4">
-      {!typeFixed && (
+      {mode === 'create' ? (
         <button
           type="button"
           onClick={() => setStep(1)}
@@ -232,16 +236,35 @@ export function QrTypeForm({
         >
           ← {texts.dashboard.step.type}: {texts.dashboard.typeNames[activeType]}
         </button>
-      )}
-
-      {(step === 2 || (mode === 'edit' && typeFixed)) && (
+      ) : (
         <>
-          <h2 className="font-heading text-xl font-semibold">{texts.dashboard.step.data}</h2>
-          {mode === 'edit' && typeFixed && (
-            <p className="rounded-md bg-line/40 px-3 py-2 text-sm text-muted">
+          {/* Editace: typ lze změnit — obsah se přepíše, hash zůstává */}
+          <div>
+            <label htmlFor="qr-type" className="text-sm font-medium">
+              {texts.dashboard.editPage.typeLabel}
+            </label>
+            <select
+              id="qr-type"
+              value={activeType}
+              onChange={(e) => changeTypeEdit(e.target.value as QrTypeKey)}
+              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 focus:border-accent focus:outline-none"
+            >
+              {TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {texts.dashboard.typeNames[t]}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 rounded-md bg-line/40 px-3 py-2 text-sm text-muted">
               {texts.dashboard.editPage.changeTypeWarning}
             </p>
-          )}
+          </div>
+        </>
+      )}
+
+      {(step === 2 || mode === 'edit') && (
+        <>
+          <h2 className="font-heading text-xl font-semibold">{texts.dashboard.step.data}</h2>
           {fields.map(renderField)}
         </>
       )}

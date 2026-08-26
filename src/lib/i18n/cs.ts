@@ -241,6 +241,21 @@ export const texts = {
       title: 'Upravit kód',
       changeTypeWarning:
         'Změna typu přepíše obsah kódu. Vytištěný kód zůstává stejný, mění se jen cíl.',
+      typeLabel: 'Typ kódu',
+      folderLabel: 'Složka',
+      noFolder: 'Bez složky',
+    },
+    folders: {
+      all: 'Všechny',
+      none: 'Bez složky',
+      new: 'Nová složka',
+      namePlaceholder: 'Název složky',
+      create: 'Vytvořit',
+      rename: 'Přejmenovat',
+      delete: 'Smazat složku',
+      deleteConfirm: 'Kódy ve složce zůstanou, jen nebudou v žádné složce. Smazat složku?',
+      empty: 'V této složce zatím nic není.',
+      error: 'Složku se nepovedlo uložit.',
     },
     new: {
       title: 'Nový kód',

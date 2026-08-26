@@ -238,3 +238,47 @@ test('stažený QR se nemění se změnou cíle (kóduje jen /{hash})', async ({
   // Vytištěný kód je vždy stejný — mění se jen cíl na serveru.
   expect(before.equals(after)).toBe(true);
 });
+
+test('složky: vytvoření, přesun kódu, filtr, smazání složky', async ({ request }) => {
+  const email = uniqueEmail();
+  const cookie = await registerAndGetVerifiedCookie(request, email);
+
+  const createFolder = await request.post('/api/folders', {
+    headers: { cookie },
+    data: { name: 'Cedule' },
+  });
+  expect(createFolder.status()).toBe(201);
+  const { id: folderId } = (await createFolder.json()) as { id: string };
+
+  const create = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'url', name: 'Ve složce', payload: { url: 'https://example.com' } },
+  });
+  const { id: qrId } = (await create.json()) as { id: string };
+
+  const move = await request.patch(`/api/qr/${qrId}`, {
+    headers: { cookie },
+    data: { folderId },
+  });
+  expect(move.status()).toBe(200);
+
+  // Cizí složka se odmítne
+  const otherEmail = uniqueEmail();
+  const otherCookie = await registerAndGetVerifiedCookie(request, otherEmail);
+  const otherFolder = await request.post('/api/folders', {
+    headers: { cookie: otherCookie },
+    data: { name: 'Cizí' },
+  });
+  const { id: otherFolderId } = (await otherFolder.json()) as { id: string };
+  const steal = await request.patch(`/api/qr/${qrId}`, {
+    headers: { cookie },
+    data: { folderId: otherFolderId },
+  });
+  expect(steal.status()).toBe(400);
+
+  // Smazání složky — kód zůstává bez složky
+  const remove = await request.delete(`/api/folders/${folderId}`, { headers: { cookie } });
+  expect(remove.status()).toBe(200);
+  const qr = await prisma.qrCode.findUniqueOrThrow({ where: { id: qrId } });
+  expect(qr.folderId).toBeNull();
+});

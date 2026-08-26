@@ -40,6 +40,7 @@ model User {
   qrCodes  QrCode[]
   sessions Session[]
   tokens   Token[]
+  folders  Folder[]
 }
 
 model Session {
@@ -78,11 +79,26 @@ model QrCode {
   isActive      Boolean  @default(true)
   adminBlocked  Boolean  @default(false)
   blockedReason String?
+  folderId      String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  scans Scan[]
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  scans  Scan[]
+
+  @@index([userId])
+  @@index([folderId])
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  qrCodes QrCode[]
 
   @@index([userId])
 }

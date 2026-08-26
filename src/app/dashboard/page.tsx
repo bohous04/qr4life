@@ -5,15 +5,34 @@ import { getSessionUser } from '@/lib/auth/session';
 import { SESSION_COOKIE } from '@/lib/auth/session';
 import { QrCard } from '@/components/qr-card';
 import { DashboardRefresher } from '@/components/dashboard-refresher';
+import { FolderChips } from '@/components/folder-chips';
 import { texts } from '@/lib/i18n/cs';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ folder?: string }>;
+}) {
   const cookieStore = await cookies();
   const user = await getSessionUser(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) return null;
 
-  const codes = await prisma.qrCode.findMany({
+  const { folder } = await searchParams;
+  const selected = folder ?? 'all';
+
+  const folders = await prisma.folder.findMany({
     where: { userId: user.id },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true, name: true },
+  });
+
+  const selectedFolder = folders.find((f) => f.id === selected);
+  const codes = await prisma.qrCode.findMany({
+    where: {
+      userId: user.id,
+      ...(selectedFolder ? { folderId: selectedFolder.id } : {}),
+      ...(selected === 'none' ? { folderId: null } : {}),
+    },
     orderBy: { createdAt: 'desc' },
     include: { _count: { select: { scans: true } } },
   });
@@ -38,7 +57,13 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {codes.length === 0 ? (
+      <FolderChips folders={folders} selected={selected} />
+
+      {selectedFolder && codes.length === 0 && (
+        <p className="mt-8 text-muted">{texts.dashboard.folders.empty}</p>
+      )}
+
+      {codes.length === 0 && !selectedFolder ? (
         <div className="mt-10 rounded-lg border border-dashed border-line p-12 text-center">
           <h2 className="font-heading text-xl font-semibold">{texts.dashboard.emptyTitle}</h2>
           <p className="mx-auto mt-2 max-w-sm text-sm text-muted">{texts.dashboard.emptyBody}</p>

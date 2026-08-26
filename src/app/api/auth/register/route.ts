@@ -15,7 +15,8 @@ const bodySchema = z.object({
 
 export async function POST(request: NextRequest) {
   const ip = clientIp(request);
-  if (hit(`register:${ip}`, 10, 60 * 60 * 1000)) {
+  // E2E=1 vypne limity (testy běží z jedné IP a rychle za sebou).
+  if (process.env.E2E !== '1' && hit(`register:${ip}`, 10, 60 * 60 * 1000)) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
 

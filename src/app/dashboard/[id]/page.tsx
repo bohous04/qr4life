@@ -16,6 +16,12 @@ export default async function EditCodePage({ params }: { params: Promise<{ id: s
   const qr = await prisma.qrCode.findUnique({ where: { id } });
   if (!qr || qr.userId !== user.id) notFound();
 
+  const folders = await prisma.folder.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true, name: true },
+  });
+
   return (
     <div>
       <div className="flex items-center gap-4">
@@ -46,6 +52,8 @@ export default async function EditCodePage({ params }: { params: Promise<{ id: s
           initialType={qr.type}
           initialName={qr.name}
           initialPayload={qr.payload}
+          initialFolderId={qr.folderId}
+          folders={folders}
         />
       </div>
     </div>

@@ -16,14 +16,30 @@ export function EditQrForm({
   initialType,
   initialName,
   initialPayload,
+  initialFolderId,
+  folders,
 }: {
   id: string;
   initialType: string;
   initialName: string;
   initialPayload: unknown;
+  initialFolderId: string | null;
+  folders: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [saved, setSaved] = useState(false);
+  const [folderId, setFolderId] = useState<string>(initialFolderId ?? '');
+
+  async function saveFolder(nextFolderId: string) {
+    setFolderId(nextFolderId);
+    await fetch(`/api/qr/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderId: nextFolderId === '' ? null : nextFolderId }),
+    });
+    setSaved(true);
+    router.refresh();
+  }
 
   return (
     <>
@@ -32,9 +48,29 @@ export function EditQrForm({
           {texts.dashboard.saved}
         </p>
       )}
+
+      {/* Složka */}
+      <div className="mb-6 max-w-md">
+        <label htmlFor="qr-folder" className="text-sm font-medium">
+          {texts.dashboard.editPage.folderLabel}
+        </label>
+        <select
+          id="qr-folder"
+          value={folderId}
+          onChange={(e) => saveFolder(e.target.value)}
+          className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 focus:border-accent focus:outline-none"
+        >
+          <option value="">{texts.dashboard.editPage.noFolder}</option>
+          {folders.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <QrTypeForm
         mode="edit"
-        typeFixed
         initialType={initialType as QrTypeKey}
         initialName={initialName}
         initialPayload={initialPayload as Record<string, string | boolean>}

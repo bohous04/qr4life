@@ -27,7 +27,10 @@ export async function POST(request: NextRequest) {
   }
   const email = body.data.email.toLowerCase();
 
-  if (hit(`login:${ip}`, 10, 15 * 60 * 1000) || hit(`login:${ip}:${email}`, 10, 15 * 60 * 1000)) {
+  if (
+    process.env.E2E !== '1' &&
+    (hit(`login:${ip}`, 10, 15 * 60 * 1000) || hit(`login:${ip}:${email}`, 10, 15 * 60 * 1000))
+  ) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
 

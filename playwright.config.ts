@@ -22,6 +22,7 @@ export default defineConfig({
       SESSION_SECRET: 'e2e-only-session-secret',
       SMTP_HOST: '',
       NODE_ENV: 'production',
+      E2E: '1',
     },
   },
 });
