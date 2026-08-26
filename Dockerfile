@@ -21,6 +21,9 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# Next standalone respektuje HOSTNAME — bez tohoto se váže na hostname kontejneru
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 # Prisma CLI pro migrace při startu
 RUN npm i -g prisma@6.19.3 && npm cache clean --force
 COPY --from=build /app/.next/standalone ./
