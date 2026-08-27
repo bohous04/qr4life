@@ -15,7 +15,9 @@ export type Resolution =
   | { kind: 'vcard'; vcf: string; filename: string }
   | { kind: 'text'; text: string }
   | { kind: 'wifi'; payload: QrPayloadMap['wifi'] }
-  | { kind: 'audio'; title: string };
+  // title je null, když majitel vlastní titulek nezadal — generický fallback
+  // (a případně jméno souboru stopy) řeší až volající, který má přístup k DB.
+  | { kind: 'audio'; title: string | null };
 
 /**
  * Čistá funkce: rozhodne, co se stane po naskenování.
@@ -53,7 +55,7 @@ export function resolveScan(qr: ScanInput): Resolution | null {
     }
     case 'audio': {
       const audio = payload as QrPayloadMap['audio'];
-      return { kind: 'audio', title: audio.title ?? texts.qr.audio.title };
+      return { kind: 'audio', title: audio.title ?? null };
     }
   }
 }

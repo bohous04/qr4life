@@ -8,7 +8,7 @@ import { texts } from '@/lib/i18n/cs';
 
 export const metadata = { title: texts.admin.title };
 
-const TYPES = ['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text'] as const;
+const TYPES = ['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text', 'audio'] as const;
 
 function resultsLabel(count: number): string {
   if (count === 1) return texts.admin.resultsOne;
@@ -144,6 +144,7 @@ export default async function AdminPage({
                 hash: code.hash,
                 name: code.name,
                 type: code.type,
+                mode: code.mode,
                 isActive: code.isActive,
                 adminBlocked: code.adminBlocked,
                 blockedReason: code.blockedReason,

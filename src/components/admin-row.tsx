@@ -9,6 +9,7 @@ export interface AdminCodeRow {
   hash: string;
   name: string;
   type: string;
+  mode: 'dynamic' | 'static';
   isActive: boolean;
   adminBlocked: boolean;
   blockedReason: string | null;
@@ -70,6 +71,8 @@ export function AdminRow({ code }: { code: AdminCodeRow }) {
     'bg-accent/10 text-accent',
   );
 
+  const isStatic = code.mode === 'static';
+
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-white p-4 transition-colors hover:border-accent/50">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -85,6 +88,11 @@ export function AdminRow({ code }: { code: AdminCodeRow }) {
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-medium">{code.name}</span>
           {typeBadge}
+          {isStatic && (
+            <span className="whitespace-nowrap rounded-full bg-line px-2.5 py-0.5 text-xs font-medium text-muted">
+              {texts.dashboard.mode.staticBadge}
+            </span>
+          )}
           {statusBadge}
           {code.adminBlocked && code.blockedReason && (
             <span className="text-xs text-red-500">({code.blockedReason})</span>
@@ -104,12 +112,30 @@ export function AdminRow({ code }: { code: AdminCodeRow }) {
         </div>
         <div className="mt-0.5 text-xs text-muted/80">
           {new Date(code.createdAt).toLocaleDateString('cs-CZ')} ·{' '}
-          {code.scanCount} {texts.admin.scansLabel}
+          {/* Statický kód se neskenuje přes appku — počet skenů by tu byl zavádějící nula */}
+          {isStatic ? (
+            <span title={texts.dashboard.mode.staticNoScans}>—</span>
+          ) : (
+            <>
+              {code.scanCount} {texts.admin.scansLabel}
+            </>
+          )}
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {code.adminBlocked ? (
+        {isStatic ? (
+          // Obsah statického kódu je zapečený v obrázku, který nikdy neprochází
+          // přes /{hash} — blokace (i odblokace) by tu byla čistě kosmetická
+          // a mohla by admina mylně ujistit, že je zneužití zastaveno.
+          // Ovládání proto vůbec nenabízíme, ať se nedá omylem spolehnout.
+          <span
+            title={texts.admin.staticBlockNote}
+            className="whitespace-nowrap rounded-md border border-dashed border-line px-3 py-1.5 text-sm text-muted"
+          >
+            {texts.admin.staticBlockDisabled}
+          </span>
+        ) : code.adminBlocked ? (
           <button
             type="button"
             onClick={unblock}

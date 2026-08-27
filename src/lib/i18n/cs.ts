@@ -319,6 +319,9 @@ export const texts = {
     blockReasonPlaceholder: 'Např. phishing',
     empty: 'Žádné kódy.',
     notAdmin: 'Nemáš přístup ke správě.',
+    staticBlockDisabled: 'Blokace nedostupná',
+    staticBlockNote:
+      'Statický kód nese obsah přímo v obrázku, který nikdy neprochází přes qr4life.cz — blokace nezastaví to, co je už vytištěné.',
   },
 
   qr: {

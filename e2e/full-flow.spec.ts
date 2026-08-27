@@ -815,3 +815,76 @@ test('upload zvuku: cca 12 MB (mezi starým 10MB stropem middlewaru a 15MB limit
   const track = (await upload.json()) as { size: number };
   expect(track.size).toBe(bigButAllowed);
 });
+
+test('zvukový kód bez vlastního titulku: stránka ukáže jméno souboru, ne obecný text', async ({ request }) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const upload = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'moje-znelka.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track = (await upload.json()) as { id: string; filename: string };
+
+  // Přesně to, co posílá skutečný formulář (qr-type-form.tsx) — payload bez title.
+  const created = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'audio', name: 'Cedule u vchodu', payload: { trackId: track.id } },
+  });
+  expect(created.status()).toBe(201);
+  const { hash } = (await created.json()) as { hash: string };
+
+  const scan = await request.get(`/${hash}`);
+  expect(scan.status()).toBe(200);
+  const html = await scan.text();
+  // Jméno souboru se ukáže...
+  expect(html).toContain(track.filename);
+  // ...generický fallback ne...
+  expect(html).not.toContain('Zvuková stopa');
+  // ...a rozhodně ne majitelovo interní označení kódu (to není veřejný obsah).
+  expect(html).not.toContain('Cedule u vchodu');
+});
+
+test('DELETE /api/audio/[id]: vlastník smaže volnou stopu; cizí i navázanou stopu smazat nejde', async ({
+  request,
+}) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+
+  // Volná stopa vlastníka — smazat lze, řádek zmizí.
+  const uploadFree = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'volna.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const free = (await uploadFree.json()) as { id: string };
+
+  const deleteFree = await request.delete(`/api/audio/${free.id}`, { headers: { cookie } });
+  expect(deleteFree.status()).toBe(200);
+  expect(await prisma.audioTrack.findUnique({ where: { id: free.id } })).toBeNull();
+
+  // Cizí stopa — 404, řádek přežije.
+  const strangerCookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const uploadStranger = await request.post('/api/audio', {
+    headers: { cookie: strangerCookie },
+    multipart: { file: { name: 'cizi.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const strangerTrack = (await uploadStranger.json()) as { id: string };
+
+  const deleteStranger = await request.delete(`/api/audio/${strangerTrack.id}`, { headers: { cookie } });
+  expect(deleteStranger.status()).toBe(404);
+  expect(await prisma.audioTrack.findUnique({ where: { id: strangerTrack.id } })).not.toBeNull();
+
+  // Navázaná stopa (i vlastní) — 404, řádek přežije. Mazání navázané stopy
+  // patří výhradně endpointům /api/qr, jinak by kód zůstal bez zvuku.
+  const uploadBound = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'navazana.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const boundTrack = (await uploadBound.json()) as { id: string };
+  const createQr = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'audio', name: 'Navázaná', payload: { trackId: boundTrack.id } },
+  });
+  expect(createQr.status()).toBe(201);
+
+  const deleteBound = await request.delete(`/api/audio/${boundTrack.id}`, { headers: { cookie } });
+  expect(deleteBound.status()).toBe(404);
+  expect(await prisma.audioTrack.findUnique({ where: { id: boundTrack.id } })).not.toBeNull();
+});

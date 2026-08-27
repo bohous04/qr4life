@@ -134,8 +134,10 @@ document.getElementById('copy-btn')?.addEventListener('click', function () {
 }
 
 export function audioPageHtml(params: { title: string; src: string }): string {
+  // Titulek stránky (`<title>`) skládá `page()` sama z params.title a
+  // texts.brand — generický "Zvuková stopa" sem nepatří dvakrát (viz h1).
   return page(
-    `${texts.qr.audio.title} · ${params.title}`,
+    params.title,
     `<h1>${escapeHtml(params.title)}</h1>
 <audio id="player" src="${escapeHtml(params.src)}" preload="metadata" style="width:100%;margin-top:16px"></audio>
 <button class="button" type="button" id="play-btn">${texts.qr.audio.play}</button>

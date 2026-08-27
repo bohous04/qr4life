@@ -37,6 +37,15 @@ export function AudioUpload({
   async function upload(file: File) {
     setBusy(true);
     setError(null);
+    // Nahradí-li se už nahraná stopa jinou, uvolníme starý slot ještě před
+    // uploadem nové — jinak by uživatel při pár výměnách narazil na limit
+    // 20 stop, aniž by měl jediný kód, který by šel smazat. Stopa je v tuhle
+    // chvíli jistě nenavázaná (je to jen rozpracovaný formulář), takže
+    // smazání smí projít; selhání ale nesmí zablokovat nový upload — sweep
+    // osiřelou stopu stejně po 24 h uklidí.
+    if (value) {
+      await fetch(`/api/audio/${value.trackId}`, { method: 'DELETE' }).catch(() => undefined);
+    }
     try {
       const form = new FormData();
       form.append('file', file);

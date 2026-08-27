@@ -12,6 +12,7 @@ import {
 import { renderQrDataUrl } from '@/lib/qr/render';
 import { wifiString } from '@/lib/qr/wifi-string';
 import { isReservedPath } from '@/lib/qr/hash';
+import { texts } from '@/lib/i18n/cs';
 
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
@@ -74,7 +75,20 @@ export async function GET(
       const dataUrl = await renderQrDataUrl(wifiString(resolution.payload));
       return htmlResponse(wifiPageHtml({ ...resolution.payload, wifiQrDataUrl: dataUrl }), 200);
     }
-    case 'audio':
-      return htmlResponse(audioPageHtml({ title: resolution.title, src: `/${qr.hash}/audio` }), 200);
+    case 'audio': {
+      // Vlastní titulek zadaný při vytvoření kódu má přednost. Bez něj
+      // ukážeme jméno nahraného souboru (už sanitizované při uploadu) —
+      // NIKDY qr.name, to je majitelovo interní označení kódu (placeholder
+      // "Např. Cedule u vchodu"), na veřejné stránce nemá co dělat.
+      let title = resolution.title;
+      if (!title) {
+        const track = await prisma.audioTrack.findUnique({
+          where: { qrCodeId: qr.id },
+          select: { filename: true },
+        });
+        title = track?.filename ?? texts.qr.audio.title;
+      }
+      return htmlResponse(audioPageHtml({ title, src: `/${qr.hash}/audio` }), 200);
+    }
   }
 }

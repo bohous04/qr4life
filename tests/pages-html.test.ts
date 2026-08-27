@@ -80,6 +80,14 @@ describe('audioPageHtml', () => {
     expect(html).not.toContain(malicious);
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;&quot;&#39;&lt;/script&gt;');
   });
+
+  it('titulek stránky obsahuje název stopy jen jednou, ne dvakrát', () => {
+    const html = audioPageHtml({ title: 'Znělka & spol', src: '/abc1234/audio' });
+    const titleTag = html.match(/<title>(.*?)<\/title>/)?.[1] ?? '';
+    expect(titleTag).toBe(`Znělka &amp; spol · ${texts.brand}`);
+    // Generický název (bez konkrétního titulku) se v <title> neobjevuje.
+    expect(titleTag).not.toContain(texts.qr.audio.title);
+  });
 });
 
 describe('společné vlastnosti', () => {

@@ -67,4 +67,22 @@ describe('resolveScan', () => {
   it('nevalidní payload → null', () => {
     expect(resolveScan({ ...base, payload: { url: 'javascript:alert(1)' } })).toBeNull();
   });
+
+  it('audio s titulkem → title z payloadu', () => {
+    const r = resolveScan({
+      ...base,
+      type: 'audio',
+      payload: { trackId: 'clx0000000000000000000000', title: 'Znělka' },
+    });
+    expect(r).toEqual({ kind: 'audio', title: 'Znělka' });
+  });
+
+  it('audio bez titulku → title null (fallback na jméno souboru řeší volající, ne tahle čistá funkce)', () => {
+    const r = resolveScan({
+      ...base,
+      type: 'audio',
+      payload: { trackId: 'clx0000000000000000000000' },
+    });
+    expect(r).toEqual({ kind: 'audio', title: null });
+  });
 });
