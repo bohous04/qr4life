@@ -148,3 +148,23 @@ describe('payloadSchema', () => {
     expect(payloadSchema('nonsense' as keyof QrPayloadMap, {})).toBeNull();
   });
 });
+
+describe('audio payload', () => {
+  it('vyžaduje trackId ve tvaru cuid', () => {
+    expect(payloadSchema('audio', { trackId: 'cmta6j8dh0008pppuer6q0fww' })).toEqual({
+      trackId: 'cmta6j8dh0008pppuer6q0fww',
+    });
+    expect(payloadSchema('audio', {})).toBeNull();
+    expect(payloadSchema('audio', { trackId: 'x' })).toBeNull();
+  });
+
+  it('bere volitelný název stopy a zahazuje neznámé klíče', () => {
+    expect(
+      payloadSchema('audio', {
+        trackId: 'cmta6j8dh0008pppuer6q0fww',
+        title: 'Znělka',
+        evil: 1,
+      }),
+    ).toEqual({ trackId: 'cmta6j8dh0008pppuer6q0fww', title: 'Znělka' });
+  });
+});

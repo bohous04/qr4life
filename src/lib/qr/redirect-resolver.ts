@@ -61,5 +61,8 @@ export function resolveScan(qr: ScanInput): Resolution | null {
     case 'wifi': {
       return { kind: 'wifi', payload: payload as QrPayloadMap['wifi'] };
     }
+    case 'audio':
+      // Přehrávač audio stopy řeší pozdější úkol.
+      return null;
   }
 }

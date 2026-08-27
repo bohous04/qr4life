@@ -71,6 +71,13 @@ const emailPayload = z
 
 const textPayload = z.object({ text: z.string().trim().min(1).max(2000) }).strict();
 
+const audioPayload = z
+  .object({
+    trackId: z.string().cuid(),
+    title: optionalTrimmed(100),
+  })
+  .strip();
+
 export type QrPayloadMap = {
   url: z.infer<typeof urlPayload>;
   wifi: z.infer<typeof wifiPayload>;
@@ -79,6 +86,7 @@ export type QrPayloadMap = {
   sms: z.infer<typeof smsPayload>;
   email: z.infer<typeof emailPayload>;
   text: z.infer<typeof textPayload>;
+  audio: z.infer<typeof audioPayload>;
 };
 
 export type QrPayloadType = keyof QrPayloadMap;
@@ -91,6 +99,7 @@ const schemas: { [T in QrPayloadType]: z.ZodType<QrPayloadMap[T]> } = {
   sms: smsPayload,
   email: emailPayload,
   text: textPayload,
+  audio: audioPayload,
 };
 
 /** Parsuje a validuje payload podle typu. Vrací null při nevalidním vstupu. */
