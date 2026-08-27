@@ -137,6 +137,11 @@ export async function POST(request: NextRequest) {
       },
       select: { id: true, filename: true, size: true, mime: true },
     });
+  }, {
+    // Uvnitř zámku se zapisuje až 15 MB blobu — výchozích 5 s Prismy
+    // by za zátěže stačit nemuselo a legitimní upload by spadl na 500.
+    timeout: 20_000,
+    maxWait: 10_000,
   });
 
   if (!track) {
