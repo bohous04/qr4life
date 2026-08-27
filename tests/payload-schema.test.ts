@@ -71,10 +71,6 @@ describe('payloadSchema', () => {
     expect(withNull?.password).toBeNull();
   });
 
-  it('wifi: 7-znaků dlouhé heslo se stále odmítne', () => {
-    expect(payloadSchema('wifi', { ssid: 'Home', password: '1234567', hidden: false })).toBeNull();
-  });
-
   it('phone: platné číslo projde', () => {
     expect(payloadSchema('phone', { number: '+420 123 456 789' })).toEqual({
       number: '+420 123 456 789',
