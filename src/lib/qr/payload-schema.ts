@@ -34,7 +34,7 @@ const wifiPayload = z
     ssid: z.string().trim().min(1).max(32),
     // Prázdné heslo = otevřená síť (null).
     password: z
-      .union([z.string().min(8).max(63), z.literal('')])
+      .union([z.string().min(8).max(63), z.literal(''), z.literal(null)])
       .transform((v) => (v === '' ? null : v)),
     hidden: z.boolean(),
   })
