@@ -365,3 +365,61 @@ test('upload zvuku: validní MP3 projde, cizí obsah ne', async ({ request }) =>
   });
   expect(fake.status()).toBe(415);
 });
+
+test('upload zvuku: nadměrný soubor s Content-Length skončí 413', async ({ request }) => {
+  const email = uniqueEmail();
+  const cookie = await registerAndGetVerifiedCookie(request, email);
+
+  // Playwright request fixture spočítá Content-Length sama — zachytí ho
+  // už předběžná kontrola v handleru.
+  const oversized = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: {
+      file: { name: 'big.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3(15 * 1024 * 1024 + 1024) },
+    },
+  });
+  expect(oversized.status()).toBe(413);
+  expect((await oversized.json()) as { error: string }).toEqual({ error: 'too_large' });
+});
+
+test('upload zvuku: nadměrný soubor bez Content-Length (chunked) skončí 413, ne 400 ani 201', async ({
+  request,
+}) => {
+  const email = uniqueEmail();
+  const cookie = await registerAndGetVerifiedCookie(request, email);
+
+  // Playwright request fixture vždy dopočítá Content-Length ze zadaného
+  // bufferu, takže díra v předběžné kontrole (chybějící/lživá hlavička,
+  // chunked přenos) se s ní nedá nasimulovat. Použijeme proto přímo
+  // nativní fetch se streamovaným (ReadableStream) tělem — Node/undici
+  // pak pošle Transfer-Encoding: chunked a Content-Length vůbec
+  // nenastaví, přesně jako útočník, který hlavičku vynechá.
+  const boundary = `----e2e-${randomBytes(8).toString('hex')}`;
+  const head = Buffer.from(
+    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="big.mp3"\r\nContent-Type: audio/mpeg\r\n\r\n`,
+  );
+  const oversized = fakeMp3(15 * 1024 * 1024 + 1024);
+  const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
+
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(head);
+      controller.enqueue(oversized);
+      controller.enqueue(tail);
+      controller.close();
+    },
+  });
+
+  const res = await fetch('http://localhost:3100/api/audio', {
+    method: 'POST',
+    headers: {
+      cookie,
+      'content-type': `multipart/form-data; boundary=${boundary}`,
+    },
+    body,
+    duplex: 'half',
+  } as RequestInit & { duplex: 'half' });
+
+  expect(res.status).toBe(413);
+  expect((await res.json()) as { error: string }).toEqual({ error: 'too_large' });
+});
