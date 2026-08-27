@@ -330,3 +330,38 @@ test('admin vidí náhled cizího kódu, běžný uživatel ne', async ({ reques
   expect(allowed.status()).toBe(200);
   expect(allowed.headers()['content-type']).toBe('image/png');
 });
+
+/** Minimální validní MP3: ID3 hlavička + výplň. */
+function fakeMp3(sizeBytes = 2048): Buffer {
+  const head = Buffer.from([0x49, 0x44, 0x33, 3, 0, 0, 0, 0, 0, 0, 0, 0]);
+  return Buffer.concat([head, Buffer.alloc(Math.max(0, sizeBytes - head.length), 0x11)]);
+}
+
+test('upload zvuku: validní MP3 projde, cizí obsah ne', async ({ request }) => {
+  const email = uniqueEmail();
+  const cookie = await registerAndGetVerifiedCookie(request, email);
+
+  const ok = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: {
+      file: { name: 'znelka.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() },
+    },
+  });
+  expect(ok.status()).toBe(201);
+  const track = (await ok.json()) as { id: string; size: number; mime: string };
+  expect(track.mime).toBe('audio/mpeg');
+  expect(track.size).toBe(2048);
+
+  // Přejmenovaný spustitelný soubor: přípona ani deklarovaný typ nepomůžou
+  const fake = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: {
+      file: {
+        name: 'virus.mp3',
+        mimeType: 'audio/mpeg',
+        buffer: Buffer.from('MZ       '),
+      },
+    },
+  });
+  expect(fake.status()).toBe(415);
+});
