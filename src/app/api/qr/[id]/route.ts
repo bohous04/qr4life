@@ -7,6 +7,9 @@ import { payloadSchema, type QrPayloadType } from '@/lib/qr/payload-schema';
 import { checkSafeBrowsing } from '@/lib/security/safe-browsing';
 import { isStaticCapable } from '@/lib/qr/static-content';
 
+/** Signál pro rollback transakce, když nám mezi read a write stopu ukradl souběžný požadavek. */
+class TrackRaceLostError extends Error {}
+
 const patchSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
   type: z.enum(['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text', 'audio']).optional(),
@@ -91,25 +94,42 @@ export async function PATCH(
 
   // Všechny validace prošly — teď mutace: výměna stopy a update kódu
   // společně v jedné transakci, aby pozdější selhání vrátilo stopu zpět.
-  const updated = await prisma.$transaction(async (tx) => {
-    if (trackToBind) {
-      await tx.audioTrack.deleteMany({ where: { qrCodeId: qr.id, id: { not: trackToBind } } });
-      await tx.audioTrack.update({ where: { id: trackToBind }, data: { qrCodeId: qr.id } });
-    } else if (needsTrackCleanup) {
-      await tx.audioTrack.deleteMany({ where: { qrCodeId: qr.id } });
-    }
-    return tx.qrCode.update({
-      where: { id: qr.id },
-      data: {
-        ...(body.data.name !== undefined ? { name: body.data.name } : {}),
-        ...(body.data.type !== undefined ? { type: body.data.type } : {}),
-        payload: payload as object,
-        ...(body.data.isActive !== undefined ? { isActive: body.data.isActive } : {}),
-        ...(folderId !== undefined ? { folderId } : {}),
-      },
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      if (trackToBind) {
+        await tx.audioTrack.deleteMany({ where: { qrCodeId: qr.id, id: { not: trackToBind } } });
+        // Podmíněný bind (jen když je stopa stále volná) řeší souběh s jiným
+        // požadavkem, který stopu mezitím svázal s jiným kódem — bez téhle
+        // podmínky by následující update tichem tu stopu ukradl zpět a cizí
+        // kód by zůstal ukazovat na trackId, který už nevlastní.
+        const bound = await tx.audioTrack.updateMany({
+          where: { id: trackToBind, qrCodeId: null },
+          data: { qrCodeId: qr.id },
+        });
+        if (bound.count === 0) {
+          throw new TrackRaceLostError();
+        }
+      } else if (needsTrackCleanup) {
+        await tx.audioTrack.deleteMany({ where: { qrCodeId: qr.id } });
+      }
+      return tx.qrCode.update({
+        where: { id: qr.id },
+        data: {
+          ...(body.data.name !== undefined ? { name: body.data.name } : {}),
+          ...(body.data.type !== undefined ? { type: body.data.type } : {}),
+          payload: payload as object,
+          ...(body.data.isActive !== undefined ? { isActive: body.data.isActive } : {}),
+          ...(folderId !== undefined ? { folderId } : {}),
+        },
+      });
     });
-  });
-  return NextResponse.json({ ok: true, isActive: updated.isActive });
+    return NextResponse.json({ ok: true, isActive: updated.isActive });
+  } catch (error) {
+    if (error instanceof TrackRaceLostError) {
+      return NextResponse.json({ error: 'invalid_track' }, { status: 400 });
+    }
+    throw error;
+  }
 }
 
 /** Smazání kódu — jen vlastník. Cascade maže i scany. */

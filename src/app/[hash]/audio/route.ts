@@ -29,8 +29,24 @@ export async function GET(
   const range = request.headers.get('range');
   const match = range?.match(/^bytes=(\d*)-(\d*)$/);
   if (match) {
-    const start = match[1] === '' ? 0 : Number(match[1]);
-    const end = match[2] === '' ? total - 1 : Math.min(Number(match[2]), total - 1);
+    let start: number;
+    let end: number;
+    if (match[1] === '') {
+      // Sufixový tvar "bytes=-N" = posledních N bajtů (RFC 7233), ne od 0.
+      const suffixLength = Number(match[2]);
+      start = Math.max(total - suffixLength, 0);
+      end = total - 1;
+      if (suffixLength <= 0) {
+        // Nulová/neplatná délka sufixu nelze uspokojit.
+        return new Response(null, {
+          status: 416,
+          headers: { ...headers, 'Content-Range': `bytes */${total}` },
+        });
+      }
+    } else {
+      start = Number(match[1]);
+      end = match[2] === '' ? total - 1 : Math.min(Number(match[2]), total - 1);
+    }
     if (Number.isNaN(start) || Number.isNaN(end) || start > end || start >= total) {
       return new Response(null, {
         status: 416,

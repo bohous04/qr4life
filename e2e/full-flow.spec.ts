@@ -703,3 +703,64 @@ test('zvukový kód: stránka s přehrávačem a stream s podporou Range', async
   const paused = await request.get(`/${hash}/audio`);
   expect(paused.status()).toBe(503);
 });
+
+test('zvukový stream: sufixový Range vrátí posledních N bajtů', async ({ request }) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const upload = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'pisen.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track = (await upload.json()) as { id: string };
+  const created = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'audio', name: 'Znělka', payload: { trackId: track.id, title: 'Znělka' } },
+  });
+  const { hash } = (await created.json()) as { id: string; hash: string };
+
+  const suffix = await request.get(`/${hash}/audio`, { headers: { Range: 'bytes=-100' } });
+  expect(suffix.status()).toBe(206);
+  expect(suffix.headers()['content-range']).toBe('bytes 1948-2047/2048');
+  const body = await suffix.body();
+  expect(body.byteLength).toBe(100);
+  expect(body).toEqual(fakeMp3().subarray(1948));
+});
+
+test('zvukový stream: 403 pro adminem blokovaný kód, 404 pro neexistující hash, 416 pro neuspokojitelný rozsah', async ({
+  request,
+}) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const upload = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'pisen.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track = (await upload.json()) as { id: string };
+  const created = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'audio', name: 'Znělka', payload: { trackId: track.id, title: 'Znělka' } },
+  });
+  const { id, hash } = (await created.json()) as { id: string; hash: string };
+
+  // Neexistující hash → 404
+  const missing = await request.get('/nonexistent-hash-xyz/audio');
+  expect(missing.status()).toBe(404);
+
+  // Neuspokojitelný rozsah (za koncem souboru) → 416
+  const unsatisfiable = await request.get(`/${hash}/audio`, {
+    headers: { Range: 'bytes=999999-' },
+  });
+  expect(unsatisfiable.status()).toBe(416);
+  expect(unsatisfiable.headers()['content-range']).toBe('bytes */2048');
+
+  // Adminem blokovaný kód → 403
+  const adminEmail = uniqueEmail();
+  const adminCookie = await registerAndGetVerifiedCookie(request, adminEmail);
+  await prisma.user.update({ where: { email: adminEmail }, data: { role: 'admin' } });
+  const block = await request.post(`/api/admin/qr/${id}/block`, {
+    headers: { cookie: adminCookie },
+    data: { blocked: true, reason: 'test' },
+  });
+  expect(block.status()).toBe(200);
+
+  const blocked = await request.get(`/${hash}/audio`);
+  expect(blocked.status()).toBe(403);
+});

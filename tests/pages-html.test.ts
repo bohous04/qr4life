@@ -72,6 +72,14 @@ describe('audioPageHtml', () => {
     expect(html).toContain('src="/abc1234/audio"');
     expect(html).toContain(texts.qr.audio.play);
   });
+
+  it('escapuje nebezpečné znaky v názvu stopy včetně </script>', () => {
+    const malicious = `<img src=x onerror=alert(1)>"'</script>`;
+    const html = audioPageHtml({ title: malicious, src: '/abc1234/audio' });
+    // Neescapovaný škodlivý řetězec se v H1 (ani nikde jinde) nesmí objevit doslovně.
+    expect(html).not.toContain(malicious);
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;&quot;&#39;&lt;/script&gt;');
+  });
 });
 
 describe('společné vlastnosti', () => {
