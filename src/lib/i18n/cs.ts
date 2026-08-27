@@ -207,6 +207,7 @@ export const texts = {
       unsupported: 'Tenhle formát neumíme. Nahraj MP3, M4A, OGG nebo WAV.',
       limit: 'Máš nahraných 20 stop, což je maximum. Smaž nějaký zvukový kód.',
       failed: 'Nahrání se nepovedlo. Zkus to znovu.',
+      rateLimited: 'Moc nahrávání najednou. Zkus to za chvíli.',
     },
     name: {
       label: 'Název',

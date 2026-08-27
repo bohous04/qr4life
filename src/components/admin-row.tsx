@@ -124,18 +124,12 @@ export function AdminRow({ code }: { code: AdminCodeRow }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {isStatic ? (
-          // Obsah statického kódu je zapečený v obrázku, který nikdy neprochází
-          // přes /{hash} — blokace (i odblokace) by tu byla čistě kosmetická
-          // a mohla by admina mylně ujistit, že je zneužití zastaveno.
-          // Ovládání proto vůbec nenabízíme, ať se nedá omylem spolehnout.
-          <span
-            title={texts.admin.staticBlockNote}
-            className="whitespace-nowrap rounded-md border border-dashed border-line px-3 py-1.5 text-sm text-muted"
-          >
-            {texts.admin.staticBlockDisabled}
-          </span>
-        ) : code.adminBlocked ? (
+        {code.adminBlocked ? (
+          // Zablokovat statický kód sice nejde (obsah je zapečený v obrázku,
+          // který nikdy neprochází přes /{hash}), ale odblokovat musí jít
+          // vždycky — kód mohl být zablokovaný přes API nebo ještě před tím,
+          // než se blokace u statických kódů omezila jen na "block". Bez
+          // odblokace by /{hash} zůstal navždy odpovídat 403.
           <button
             type="button"
             onClick={unblock}
@@ -144,6 +138,17 @@ export function AdminRow({ code }: { code: AdminCodeRow }) {
           >
             {texts.admin.unblock}
           </button>
+        ) : isStatic ? (
+          // Obsah statického kódu je zapečený v obrázku, který nikdy neprochází
+          // přes /{hash} — blokace by tu byla čistě kosmetická a mohla by
+          // admina mylně ujistit, že je zneužití zastaveno. Nabídku "block"
+          // proto nenabízíme, ať se nedá omylem spolehnout.
+          <span
+            title={texts.admin.staticBlockNote}
+            className="whitespace-nowrap rounded-md border border-dashed border-line px-3 py-1.5 text-sm text-muted"
+          >
+            {texts.admin.staticBlockDisabled}
+          </span>
         ) : !confirming ? (
           <button
             type="button"

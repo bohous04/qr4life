@@ -48,7 +48,10 @@ export async function POST(request: NextRequest) {
   let trackId: string | null = null;
   if (body.data.type === 'audio') {
     const requested = (payload as { trackId: string }).trackId;
-    const track = await prisma.audioTrack.findUnique({ where: { id: requested } });
+    const track = await prisma.audioTrack.findUnique({
+      where: { id: requested },
+      select: { id: true, userId: true, qrCodeId: true },
+    });
     if (!track || track.userId !== user.id || track.qrCodeId !== null) {
       return NextResponse.json({ error: 'invalid_track' }, { status: 400 });
     }

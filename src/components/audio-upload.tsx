@@ -12,6 +12,7 @@ const uploadErrors: Record<string, string> = {
   too_large: texts.dashboard.audio.tooLarge,
   unsupported_type: texts.dashboard.audio.unsupported,
   track_limit: texts.dashboard.audio.limit,
+  rate_limited: texts.dashboard.audio.rateLimited,
 };
 
 /** Výběr souboru + okamžité nahrání na /api/audio; vrací id stopy. */
@@ -43,8 +44,19 @@ export function AudioUpload({
     // chvíli jistě nenavázaná (je to jen rozpracovaný formulář), takže
     // smazání smí projít; selhání ale nesmí zablokovat nový upload — sweep
     // osiřelou stopu stejně po 24 h uklidí.
+    //
+    // Odpověď si zapamatujeme: 404 znamená, že stopa mezitím nebyla volná
+    // (formulář editace existujícího kódu — stopa je pořád navázaná a
+    // přežila), takže `value` musí zůstat. Cokoli jiného než ok (síťový
+    // výpadek, neočekávaná chyba) bereme stejně opatrně — o smazání nevíme
+    // jistě, takže `value` raději necháme být, ať formulář neodešle
+    // trackId na stopu, kterou jsme sami smazali.
+    let freed = false;
     if (value) {
-      await fetch(`/api/audio/${value.trackId}`, { method: 'DELETE' }).catch(() => undefined);
+      const deleteResponse = await fetch(`/api/audio/${value.trackId}`, { method: 'DELETE' }).catch(
+        () => null,
+      );
+      freed = deleteResponse?.ok ?? false;
     }
     try {
       const form = new FormData();
@@ -53,9 +65,9 @@ export function AudioUpload({
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string };
         setError((data.error && uploadErrors[data.error]) ?? texts.dashboard.audio.failed);
-        // Náhrada selhala — pokud už existovala platná stopa, necháme ji být,
-        // ať formulář neodešle prázdné trackId. Vyčistit smí jen to, co nikdy nebylo.
-        if (!value) onChange(null);
+        // Náhrada selhala — starou stopu smíme zahodit, jen pokud jsme ji
+        // sami právě smazali. Jinak by formulář odeslal mrtvé trackId.
+        if (!value || freed) onChange(null);
         return;
       }
       const track = (await response.json()) as { id: string; filename: string };
@@ -64,7 +76,7 @@ export function AudioUpload({
     } catch {
       // Výpadek sítě apod. — ukázat chybu, ale zachovat poslední platnou stopu.
       setError(texts.dashboard.audio.failed);
-      if (!value) onChange(null);
+      if (!value || freed) onChange(null);
     } finally {
       setBusy(false);
     }

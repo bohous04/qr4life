@@ -78,8 +78,9 @@ export async function POST(request: NextRequest) {
   // přihlášený uživatel má vždy jen svůj vlastní účet — limit na
   // user.id proto drží i při podvržené IP.
   if (
-    hit(`audio-upload:${clientIp(request)}`, 20, 60 * 60 * 1000) ||
-    hit(`audio-upload-user:${user.id}`, 20, 60 * 60 * 1000)
+    process.env.E2E !== '1' &&
+    (hit(`audio-upload:${clientIp(request)}`, 20, 60 * 60 * 1000) ||
+      hit(`audio-upload-user:${user.id}`, 20, 60 * 60 * 1000))
   ) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }

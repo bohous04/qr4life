@@ -58,7 +58,10 @@ export async function PATCH(
   let trackToBind: string | null = null;
   if (type === 'audio') {
     const requested = (payload as { trackId: string }).trackId;
-    const track = await prisma.audioTrack.findUnique({ where: { id: requested } });
+    const track = await prisma.audioTrack.findUnique({
+      where: { id: requested },
+      select: { id: true, userId: true, qrCodeId: true },
+    });
     if (!track || track.userId !== user.id || (track.qrCodeId !== null && track.qrCodeId !== qr.id)) {
       return NextResponse.json({ error: 'invalid_track' }, { status: 400 });
     }
