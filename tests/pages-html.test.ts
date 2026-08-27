@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  audioPageHtml,
   blockedHtml,
   branded404Html,
   inactiveHtml,
   textPageHtml,
   wifiPageHtml,
 } from '@/lib/qr/pages-html';
+import { texts } from '@/lib/i18n/cs';
 
 describe('status pages', () => {
   it('404 má titulek a odkaz domů', () => {
@@ -59,6 +61,16 @@ describe('wifiPageHtml', () => {
 describe('textPageHtml', () => {
   it('zobrazí text', () => {
     expect(textPageHtml('Ahoj světe')).toContain('Ahoj světe');
+  });
+});
+
+describe('audioPageHtml', () => {
+  it('obsahuje název stopy, přehrávač a odkaz na stream', () => {
+    const html = audioPageHtml({ title: 'Znělka & spol', src: '/abc1234/audio' });
+    expect(html).toContain('Znělka &amp; spol');
+    expect(html).toContain('<audio');
+    expect(html).toContain('src="/abc1234/audio"');
+    expect(html).toContain(texts.qr.audio.play);
   });
 });
 

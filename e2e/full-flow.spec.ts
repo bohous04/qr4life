@@ -670,3 +670,36 @@ test('PATCH audio kódu: výměna za jinou volnou stopu → 200, nová navázan�
   const oldTrack = await prisma.audioTrack.findUnique({ where: { id: track1.id } });
   expect(oldTrack).toBeNull();
 });
+
+test('zvukový kód: stránka s přehrávačem a stream s podporou Range', async ({ request }) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const upload = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'pisen.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track = (await upload.json()) as { id: string };
+  const created = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'audio', name: 'Znělka', payload: { trackId: track.id, title: 'Znělka' } },
+  });
+  const { id, hash } = (await created.json()) as { id: string; hash: string };
+
+  const page = await request.get(`/${hash}`);
+  expect(page.status()).toBe(200);
+  expect(await page.text()).toContain(`/${hash}/audio`);
+
+  const full = await request.get(`/${hash}/audio`);
+  expect(full.status()).toBe(200);
+  expect(full.headers()['content-type']).toBe('audio/mpeg');
+  expect(full.headers()['accept-ranges']).toBe('bytes');
+
+  const partial = await request.get(`/${hash}/audio`, { headers: { Range: 'bytes=0-99' } });
+  expect(partial.status()).toBe(206);
+  expect(partial.headers()['content-range']).toBe('bytes 0-99/2048');
+  expect((await partial.body()).byteLength).toBe(100);
+
+  // Pozastavený kód zvuk nepustí
+  await request.patch(`/api/qr/${id}`, { headers: { cookie }, data: { isActive: false } });
+  const paused = await request.get(`/${hash}/audio`);
+  expect(paused.status()).toBe(503);
+});

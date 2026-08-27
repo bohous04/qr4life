@@ -132,3 +132,29 @@ document.getElementById('copy-btn')?.addEventListener('click', function () {
 </script>`,
   );
 }
+
+export function audioPageHtml(params: { title: string; src: string }): string {
+  return page(
+    `${texts.qr.audio.title} · ${params.title}`,
+    `<h1>${escapeHtml(params.title)}</h1>
+<audio id="player" src="${escapeHtml(params.src)}" preload="metadata" style="width:100%;margin-top:16px"></audio>
+<button class="button" type="button" id="play-btn">${texts.qr.audio.play}</button>
+<p class="hint">${texts.qr.audio.hint}</p>
+<script>
+(function () {
+  var player = document.getElementById('player');
+  var button = document.getElementById('play-btn');
+  function sync() {
+    button.textContent = player.paused ? ${JSON.stringify(texts.qr.audio.play)} : ${JSON.stringify(texts.qr.audio.pause)};
+  }
+  button.addEventListener('click', function () {
+    if (player.paused) player.play(); else player.pause();
+  });
+  player.addEventListener('play', sync);
+  player.addEventListener('pause', sync);
+  player.play().catch(function () { /* autoplay blokován — zbývá tlačítko */ });
+  sync();
+})();
+</script>`,
+  );
+}

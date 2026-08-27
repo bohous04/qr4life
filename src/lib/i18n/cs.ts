@@ -317,6 +317,12 @@ export const texts = {
       openNetwork: 'Otevřená síť — heslo není potřeba',
       scanHint: 'Naskenuj QR kód na obrazovce a telefon se připojí sám.',
     },
+    audio: {
+      title: 'Zvuková stopa',
+      play: 'Přehrát',
+      pause: 'Pauza',
+      hint: 'Přehrávání spustíš tlačítkem — prohlížeč zvuk sám nepustí.',
+    },
     text: {
       title: 'Zpráva z kódu',
     },

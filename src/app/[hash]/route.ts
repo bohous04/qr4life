@@ -2,6 +2,7 @@ import { after, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { resolveScan } from '@/lib/qr/redirect-resolver';
 import {
+  audioPageHtml,
   blockedHtml,
   branded404Html,
   inactiveHtml,
@@ -73,5 +74,7 @@ export async function GET(
       const dataUrl = await renderQrDataUrl(wifiString(resolution.payload));
       return htmlResponse(wifiPageHtml({ ...resolution.payload, wifiQrDataUrl: dataUrl }), 200);
     }
+    case 'audio':
+      return htmlResponse(audioPageHtml({ title: resolution.title, src: `/${qr.hash}/audio` }), 200);
   }
 }
