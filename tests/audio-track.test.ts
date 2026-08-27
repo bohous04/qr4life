@@ -57,4 +57,26 @@ describe('AudioTrack', () => {
     expect(qr.mode).toBe('dynamic');
     await prisma.user.delete({ where: { id: user.id } });
   });
+
+  it('smaže osiřelou stopu při smazání uživatele', async () => {
+    const user = await prisma.user.create({
+      data: { email: `orphan-${Date.now()}@example.com`, emailVerifiedAt: new Date() },
+    });
+    const track = await prisma.audioTrack.create({
+      data: {
+        userId: user.id,
+        qrCodeId: null,
+        filename: 'orphan.mp3',
+        mime: 'audio/mpeg',
+        size: 5,
+        data: Buffer.from([1, 2, 3, 4, 5]),
+      },
+    });
+
+    const loaded = await prisma.audioTrack.findUniqueOrThrow({ where: { id: track.id } });
+    expect(Buffer.from(loaded.data)).toEqual(Buffer.from([1, 2, 3, 4, 5]));
+
+    await prisma.user.delete({ where: { id: user.id } });
+    expect(await prisma.audioTrack.findUnique({ where: { id: track.id } })).toBeNull();
+  });
 });
