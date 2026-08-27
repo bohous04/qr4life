@@ -423,3 +423,56 @@ test('upload zvuku: nadměrný soubor bez Content-Length (chunked) skončí 413,
   expect(res.status).toBe(413);
   expect((await res.json()) as { error: string }).toEqual({ error: 'too_large' });
 });
+
+test('statický režim: povolený u wifi, zakázaný u odkazu, neměnný', async ({ request }) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+
+  const wifi = await request.post('/api/qr', {
+    headers: { cookie },
+    data: {
+      type: 'wifi',
+      mode: 'static',
+      name: 'Chalupa staticky',
+      payload: { ssid: 'Chalupa', password: 'tajneheslo', hidden: false },
+    },
+  });
+  expect(wifi.status()).toBe(201);
+  const { id } = (await wifi.json()) as { id: string };
+
+  const url = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'url', mode: 'static', name: 'Odkaz', payload: { url: 'https://example.com' } },
+  });
+  expect(url.status()).toBe(400);
+  expect((await url.json()).error).toBe('invalid_mode');
+
+  const switchMode = await request.patch(`/api/qr/${id}`, {
+    headers: { cookie },
+    data: { mode: 'dynamic' },
+  });
+  expect(switchMode.status()).toBe(400);
+  expect((await switchMode.json()).error).toBe('mode_immutable');
+});
+
+test('zvukový kód: naváže stopu, cizí trackId odmítne', async ({ request }) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const upload = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'pisen.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track = (await upload.json()) as { id: string };
+
+  const created = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'audio', name: 'Znělka', payload: { trackId: track.id, title: 'Znělka' } },
+  });
+  expect(created.status()).toBe(201);
+
+  const strangerCookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const stolen = await request.post('/api/qr', {
+    headers: { cookie: strangerCookie },
+    data: { type: 'audio', name: 'Kradená', payload: { trackId: track.id } },
+  });
+  expect(stolen.status()).toBe(400);
+  expect((await stolen.json()).error).toBe('invalid_track');
+});

@@ -8,10 +8,11 @@ import { checkSafeBrowsing } from '@/lib/security/safe-browsing';
 
 const patchSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
-  type: z.enum(['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text']).optional(),
+  type: z.enum(['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text', 'audio']).optional(),
   payload: z.unknown().optional(),
   isActive: z.boolean().optional(),
   folderId: z.string().cuid().nullable().optional(),
+  mode: z.enum(['dynamic', 'static']).optional(),
 });
 
 /** Změna kódu — jen vlastník (cizí id → 404, netesení existence). */
@@ -29,12 +30,33 @@ export async function PATCH(
   const body = patchSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: 'invalid' }, { status: 400 });
 
+  // Režim je vlastnost vytištěného obrázku — po vytvoření se nemění.
+  if (body.data.mode !== undefined && body.data.mode !== qr.mode) {
+    return NextResponse.json({ error: 'mode_immutable' }, { status: 400 });
+  }
+
   const type = (body.data.type ?? qr.type) as QrPayloadType;
   const payload =
     body.data.payload !== undefined
       ? payloadSchema(type, body.data.payload)
       : payloadSchema(type, qr.payload);
   if (!payload) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
+
+  // Výměna zvukové stopy: nová musí patřit uživateli a být volná, stará se maže.
+  if (type === 'audio') {
+    const requested = (payload as { trackId: string }).trackId;
+    const track = await prisma.audioTrack.findUnique({ where: { id: requested } });
+    if (!track || track.userId !== user.id || (track.qrCodeId !== null && track.qrCodeId !== qr.id)) {
+      return NextResponse.json({ error: 'invalid_track' }, { status: 400 });
+    }
+    if (track.qrCodeId === null) {
+      await prisma.audioTrack.deleteMany({ where: { qrCodeId: qr.id, id: { not: track.id } } });
+      await prisma.audioTrack.update({ where: { id: track.id }, data: { qrCodeId: qr.id } });
+    }
+  } else {
+    // Změna typu pryč od zvuku odpojenou stopu nemá komu nechat.
+    await prisma.audioTrack.deleteMany({ where: { qrCodeId: qr.id } });
+  }
 
   // Složka musí patřit uživateli (nebo null = bez složky)
   let folderId: string | null | undefined;

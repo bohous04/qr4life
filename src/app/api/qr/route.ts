@@ -10,10 +10,12 @@ import { hit } from '@/lib/security/rate-limit';
 import { checkSafeBrowsing } from '@/lib/security/safe-browsing';
 import { logError } from '@/lib/log-error';
 import { clientIp, appUrl } from '@/lib/http';
+import { isStaticCapable } from '@/lib/qr/static-content';
 
 const bodySchema = z.object({
-  type: z.enum(['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text']),
+  type: z.enum(['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text', 'audio']),
   name: z.string().trim().min(1).max(100),
+  mode: z.enum(['dynamic', 'static']).optional(),
   payload: z.unknown(),
 });
 
@@ -37,6 +39,22 @@ export async function POST(request: NextRequest) {
   const payload = payloadSchema(body.data.type as QrPayloadType, body.data.payload);
   if (!payload) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
 
+  const mode = body.data.mode ?? 'dynamic';
+  if (mode === 'static' && !isStaticCapable(body.data.type)) {
+    return NextResponse.json({ error: 'invalid_mode' }, { status: 400 });
+  }
+
+  // Zvukový kód musí ukazovat na vlastní dosud nenavázanou stopu.
+  let trackId: string | null = null;
+  if (body.data.type === 'audio') {
+    const requested = (payload as { trackId: string }).trackId;
+    const track = await prisma.audioTrack.findUnique({ where: { id: requested } });
+    if (!track || track.userId !== user.id || track.qrCodeId !== null) {
+      return NextResponse.json({ error: 'invalid_track' }, { status: 400 });
+    }
+    trackId = track.id;
+  }
+
   // Safe Browsing při uložení (bez klíče okamžitě 'ok')
   if (body.data.type === 'url') {
     const target = (payload as { url: string }).url;
@@ -57,8 +75,12 @@ export async function POST(request: NextRequest) {
           name: body.data.name,
           type: body.data.type,
           payload: payload as object,
+          mode,
         },
       });
+      if (trackId) {
+        await prisma.audioTrack.update({ where: { id: trackId }, data: { qrCodeId: qr.id } });
+      }
       return NextResponse.json(
         { id: qr.id, hash: qr.hash, url: `${appUrl()}/${qr.hash}` },
         { status: 201 },
