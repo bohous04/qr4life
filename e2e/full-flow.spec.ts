@@ -511,3 +511,162 @@ test('statický kód kóduje obsah, dynamický kóduje odkaz', async ({ request 
   const expected = (await renderQr(wifiString({ ...payload }), 'png', 256)) as Buffer;
   expect(Buffer.from(await staticPng.body()).equals(expected)).toBe(true);
 });
+
+test('PATCH audio kódu: neplatná složka nesmí smazat navázanou stopu', async ({ request }) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+
+  const upload1 = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'puvodni.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track1 = (await upload1.json()) as { id: string };
+
+  const created = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'audio', name: 'Znělka', payload: { trackId: track1.id, title: 'Znělka' } },
+  });
+  expect(created.status()).toBe(201);
+  const { id: qrId } = (await created.json()) as { id: string };
+
+  const upload2 = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'nova.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track2 = (await upload2.json()) as { id: string };
+
+  // Cizí složka existujícího uživatele — nepatří volajícímu.
+  const otherCookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const otherFolder = await request.post('/api/folders', {
+    headers: { cookie: otherCookie },
+    data: { name: 'Cizí' },
+  });
+  const { id: otherFolderId } = (await otherFolder.json()) as { id: string };
+
+  const patch = await request.patch(`/api/qr/${qrId}`, {
+    headers: { cookie },
+    data: {
+      type: 'audio',
+      payload: { trackId: track2.id, title: 'Nová znělka' },
+      folderId: otherFolderId,
+    },
+  });
+  expect(patch.status()).toBe(400);
+  expect((await patch.json()).error).toBe('invalid_folder');
+
+  // Původní stopa zůstává navázaná — žádná ztráta dat před tím, než requst zvalidoval vše.
+  const original = await prisma.audioTrack.findUniqueOrThrow({ where: { id: track1.id } });
+  expect(original.qrCodeId).toBe(qrId);
+
+  // Nová stopa se nenavázala — request selhal dřív, než k mutaci vůbec došlo.
+  const untouched = await prisma.audioTrack.findUniqueOrThrow({ where: { id: track2.id } });
+  expect(untouched.qrCodeId).toBeNull();
+
+  // Kód sám je nezměněný a pořád ukazuje na původní stopu.
+  const qr = await prisma.qrCode.findUniqueOrThrow({ where: { id: qrId } });
+  expect(qr.type).toBe('audio');
+  expect((qr.payload as { trackId: string }).trackId).toBe(track1.id);
+
+  // Kód dál "existuje" a odpovídá konzistentně (přehrávač zvuku je pozdější úkol).
+  const scan = await request.get(`/${qr.hash}`, { maxRedirects: 0 });
+  expect(scan.status()).not.toBe(500);
+});
+
+test('statický kód: PATCH na type audio bez mode se odmítne, uložený kód se nezmění', async ({
+  request,
+}) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+
+  const create = await request.post('/api/qr', {
+    headers: { cookie },
+    data: {
+      type: 'wifi',
+      mode: 'static',
+      name: 'Staticky wifi',
+      payload: { ssid: 'StatickaSit', password: 'tajneheslo', hidden: false },
+    },
+  });
+  expect(create.status()).toBe(201);
+  const { id: qrId } = (await create.json()) as { id: string };
+
+  const upload = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'znelka.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track = (await upload.json()) as { id: string };
+
+  const patch = await request.patch(`/api/qr/${qrId}`, {
+    headers: { cookie },
+    data: { type: 'audio', payload: { trackId: track.id } },
+  });
+  expect(patch.status()).toBe(400);
+  expect((await patch.json()).error).toBe('invalid_mode');
+
+  const qr = await prisma.qrCode.findUniqueOrThrow({ where: { id: qrId } });
+  expect(qr.type).toBe('wifi');
+  expect(qr.mode).toBe('static');
+  expect((qr.payload as { ssid: string }).ssid).toBe('StatickaSit');
+});
+
+test('PATCH audio kódu na type text: 200, stará stopa se smaže', async ({ request }) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+
+  const upload = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'znelka.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track = (await upload.json()) as { id: string };
+
+  const created = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'audio', name: 'Znělka', payload: { trackId: track.id } },
+  });
+  const { id: qrId } = (await created.json()) as { id: string };
+
+  const patch = await request.patch(`/api/qr/${qrId}`, {
+    headers: { cookie },
+    data: { type: 'text', payload: { text: 'Už žádný zvuk' } },
+  });
+  expect(patch.status()).toBe(200);
+
+  const qr = await prisma.qrCode.findUniqueOrThrow({ where: { id: qrId } });
+  expect(qr.type).toBe('text');
+
+  const deletedTrack = await prisma.audioTrack.findUnique({ where: { id: track.id } });
+  expect(deletedTrack).toBeNull();
+});
+
+test('PATCH audio kódu: výměna za jinou volnou stopu → 200, nová navázaná, stará smazaná', async ({
+  request,
+}) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+
+  const upload1 = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'puvodni.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track1 = (await upload1.json()) as { id: string };
+
+  const created = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'audio', name: 'Znělka', payload: { trackId: track1.id } },
+  });
+  const { id: qrId } = (await created.json()) as { id: string };
+
+  const upload2 = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'nova.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() } },
+  });
+  const track2 = (await upload2.json()) as { id: string };
+
+  const patch = await request.patch(`/api/qr/${qrId}`, {
+    headers: { cookie },
+    data: { type: 'audio', payload: { trackId: track2.id, title: 'Nová znělka' } },
+  });
+  expect(patch.status()).toBe(200);
+
+  const boundTrack = await prisma.audioTrack.findUniqueOrThrow({ where: { id: track2.id } });
+  expect(boundTrack.qrCodeId).toBe(qrId);
+
+  const oldTrack = await prisma.audioTrack.findUnique({ where: { id: track1.id } });
+  expect(oldTrack).toBeNull();
+});

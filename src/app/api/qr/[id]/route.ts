@@ -5,6 +5,7 @@ import { getSessionUser } from '@/lib/auth/session';
 import { SESSION_COOKIE } from '@/lib/auth/session';
 import { payloadSchema, type QrPayloadType } from '@/lib/qr/payload-schema';
 import { checkSafeBrowsing } from '@/lib/security/safe-browsing';
+import { isStaticCapable } from '@/lib/qr/static-content';
 
 const patchSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
@@ -42,7 +43,16 @@ export async function PATCH(
       : payloadSchema(type, qr.payload);
   if (!payload) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
 
-  // Výměna zvukové stopy: nová musí patřit uživateli a být volná, stará se maže.
+  // Statický režim smí kódovat jen staticky schopné typy — totéž, co hlídá POST.
+  if (qr.mode === 'static' && !isStaticCapable(type)) {
+    return NextResponse.json({ error: 'invalid_mode' }, { status: 400 });
+  }
+
+  // Výměna zvukové stopy: validace bez mutace — nová stopa musí patřit
+  // uživateli a být volná. Skutečná výměna se provede až po všech
+  // validacích níže, aby chyba (např. neplatná složka) nesmazala stopu,
+  // kterou už nejde vrátit zpět.
+  let trackToBind: string | null = null;
   if (type === 'audio') {
     const requested = (payload as { trackId: string }).trackId;
     const track = await prisma.audioTrack.findUnique({ where: { id: requested } });
@@ -50,13 +60,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'invalid_track' }, { status: 400 });
     }
     if (track.qrCodeId === null) {
-      await prisma.audioTrack.deleteMany({ where: { qrCodeId: qr.id, id: { not: track.id } } });
-      await prisma.audioTrack.update({ where: { id: track.id }, data: { qrCodeId: qr.id } });
+      trackToBind = track.id;
     }
-  } else {
-    // Změna typu pryč od zvuku odpojenou stopu nemá komu nechat.
-    await prisma.audioTrack.deleteMany({ where: { qrCodeId: qr.id } });
   }
+  // Změna typu pryč od zvuku odpojenou stopu nemá komu nechat — ale jen
+  // pokud kód zvukový skutečně byl (jinak zbytečný dotaz při běžném přejmenování).
+  const needsTrackCleanup = type !== 'audio' && qr.type === 'audio';
 
   // Složka musí patřit uživateli (nebo null = bez složky)
   let folderId: string | null | undefined;
@@ -80,15 +89,25 @@ export async function PATCH(
     }
   }
 
-  const updated = await prisma.qrCode.update({
-    where: { id: qr.id },
-    data: {
-      ...(body.data.name !== undefined ? { name: body.data.name } : {}),
-      ...(body.data.type !== undefined ? { type: body.data.type } : {}),
-      payload: payload as object,
-      ...(body.data.isActive !== undefined ? { isActive: body.data.isActive } : {}),
-      ...(folderId !== undefined ? { folderId } : {}),
-    },
+  // Všechny validace prošly — teď mutace: výměna stopy a update kódu
+  // společně v jedné transakci, aby pozdější selhání vrátilo stopu zpět.
+  const updated = await prisma.$transaction(async (tx) => {
+    if (trackToBind) {
+      await tx.audioTrack.deleteMany({ where: { qrCodeId: qr.id, id: { not: trackToBind } } });
+      await tx.audioTrack.update({ where: { id: trackToBind }, data: { qrCodeId: qr.id } });
+    } else if (needsTrackCleanup) {
+      await tx.audioTrack.deleteMany({ where: { qrCodeId: qr.id } });
+    }
+    return tx.qrCode.update({
+      where: { id: qr.id },
+      data: {
+        ...(body.data.name !== undefined ? { name: body.data.name } : {}),
+        ...(body.data.type !== undefined ? { type: body.data.type } : {}),
+        payload: payload as object,
+        ...(body.data.isActive !== undefined ? { isActive: body.data.isActive } : {}),
+        ...(folderId !== undefined ? { folderId } : {}),
+      },
+    });
   });
   return NextResponse.json({ ok: true, isActive: updated.isActive });
 }

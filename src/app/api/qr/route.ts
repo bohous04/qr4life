@@ -67,8 +67,10 @@ export async function POST(request: NextRequest) {
   for (let attempt = 0; attempt < 5; attempt++) {
     const hash = generateHash();
     if (isReservedPath(hash)) continue;
+
+    let qr;
     try {
-      const qr = await prisma.qrCode.create({
+      qr = await prisma.qrCode.create({
         data: {
           userId: user.id,
           hash,
@@ -78,13 +80,6 @@ export async function POST(request: NextRequest) {
           mode,
         },
       });
-      if (trackId) {
-        await prisma.audioTrack.update({ where: { id: trackId }, data: { qrCodeId: qr.id } });
-      }
-      return NextResponse.json(
-        { id: qr.id, hash: qr.hash, url: `${appUrl()}/${qr.hash}` },
-        { status: 201 },
-      );
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -95,6 +90,35 @@ export async function POST(request: NextRequest) {
       await logError(`Vytvoření kódu selhalo: ${error instanceof Error ? error.message : String(error)}`, 'POST /api/qr');
       throw error;
     }
+
+    if (trackId) {
+      // Podmíněný bind (jen když je stopa stále volná) řeší souběh dvou
+      // POSTů se stejným trackId atomicky — jinak by druhý bind jen
+      // přepojil stopu a první vytvořený kód by zůstal bez ní.
+      try {
+        const bound = await prisma.audioTrack.updateMany({
+          where: { id: trackId, qrCodeId: null },
+          data: { qrCodeId: qr.id },
+        });
+        if (bound.count === 0) {
+          await prisma.qrCode.delete({ where: { id: qr.id } });
+          return NextResponse.json({ error: 'invalid_track' }, { status: 400 });
+        }
+      } catch (error) {
+        // Bind selhal z jiného důvodu — nesmí zůstat kód bez stopy.
+        await prisma.qrCode.delete({ where: { id: qr.id } }).catch(() => undefined);
+        await logError(
+          `Navázání zvukové stopy selhalo: ${error instanceof Error ? error.message : String(error)}`,
+          'POST /api/qr',
+        );
+        throw error;
+      }
+    }
+
+    return NextResponse.json(
+      { id: qr.id, hash: qr.hash, url: `${appUrl()}/${qr.hash}` },
+      { status: 201 },
+    );
   }
   return NextResponse.json({ error: 'hash_collision' }, { status: 500 });
 }
