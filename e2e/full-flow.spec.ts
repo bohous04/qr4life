@@ -115,6 +115,26 @@ test('Wi-Fi kód zobrazí SSID, heslo a tlačítko kopírování', async ({ requ
   expect(await page.locator('img.qr').getAttribute('src')).toContain('data:image/png;base64,');
 });
 
+test('otevřená Wi-Fi (bez hesla) projde end-to-end a zobrazí se správně', async ({ request, page }) => {
+  const email = uniqueEmail();
+  const cookie = await registerAndGetVerifiedCookie(request, email);
+  const create = await request.post('/api/qr', {
+    headers: { cookie },
+    data: {
+      type: 'wifi',
+      name: 'Otevřená síť',
+      payload: { ssid: 'GuestNetwork', password: null, hidden: false },
+    },
+  });
+  expect(create.status()).toBe(201);
+  const { hash } = (await create.json()) as { hash: string };
+
+  const response = await page.goto(`/${hash}`);
+  expect(response?.status()).toBe(200);
+  await expect(page.getByText('GuestNetwork')).toBeVisible();
+  expect(await page.locator('img.qr').getAttribute('src')).toContain('data:image/png;base64,');
+});
+
 test('neexistující hash → branded 404', async ({ page }) => {
   const response = await page.goto('/zzzzzzz');
   expect(response?.status()).toBe(404);

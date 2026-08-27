@@ -56,6 +56,25 @@ describe('payloadSchema', () => {
     });
   });
 
+  it('wifi: null heslo je povoleno pro otevřenou síť', () => {
+    expect(payloadSchema('wifi', { ssid: 'Chalupa', password: null, hidden: false })).toEqual({
+      ssid: 'Chalupa',
+      password: null,
+      hidden: false,
+    });
+  });
+
+  it('wifi: null a prázdný string normalizují oba na null', () => {
+    const withNull = payloadSchema('wifi', { ssid: 'Open', password: null, hidden: false });
+    const withEmpty = payloadSchema('wifi', { ssid: 'Open', password: '', hidden: false });
+    expect(withNull).toEqual(withEmpty);
+    expect(withNull?.password).toBeNull();
+  });
+
+  it('wifi: 7-znaků dlouhé heslo se stále odmítne', () => {
+    expect(payloadSchema('wifi', { ssid: 'Home', password: '1234567', hidden: false })).toBeNull();
+  });
+
   it('phone: platné číslo projde', () => {
     expect(payloadSchema('phone', { number: '+420 123 456 789' })).toEqual({
       number: '+420 123 456 789',
