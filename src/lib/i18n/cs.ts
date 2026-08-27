@@ -187,6 +187,27 @@ export const texts = {
     saveError: 'Uložení se nepovedlo. Zkus to znovu.',
     createError: 'Vytvoření se nepovedlo. Zkus to znovu.',
     rateLimited: 'Vytvořil jsi moc kódů najednou. Zkus to za chvíli.',
+    mode: {
+      label: 'Režim kódu',
+      dynamic: 'Dynamický',
+      dynamicHint: 'Cíl můžeš kdykoliv změnit. Kód vede přes qr4life.cz.',
+      static: 'Statický',
+      staticHint: 'Obsah je natvrdo v obrázku — čte se rychleji a funguje bez internetu, ale cíl už nezměníš.',
+      staticBadge: 'Statický',
+      staticEditWarning:
+        'Tohle je statický kód. Změna obsahu vytvoří jiný obrázek — vytištěné cedule pořád vedou na staré údaje. Po uložení si stáhni a vytiskni nový.',
+      staticNoScans: 'Statický kód nesbírá skeny.',
+    },
+    audio: {
+      pick: 'Vybrat soubor',
+      replace: 'Vyměnit stopu',
+      uploading: 'Nahrávám…',
+      hint: 'MP3, M4A, OGG nebo WAV do 15 MB.',
+      tooLarge: 'Soubor je větší než 15 MB.',
+      unsupported: 'Tenhle formát neumíme. Nahraj MP3, M4A, OGG nebo WAV.',
+      limit: 'Máš nahraných 20 stop, což je maximum. Smaž nějaký zvukový kód.',
+      failed: 'Nahrání se nepovedlo. Zkus to znovu.',
+    },
     name: {
       label: 'Název',
       placeholder: 'Např. Cedule u vchodu',
@@ -205,6 +226,7 @@ export const texts = {
       sms: 'SMS',
       email: 'E-mail',
       text: 'Text',
+      audio: 'Zvuk',
     },
     typeDescriptions: {
       url: 'Otevře jakoukoli webovou adresu.',
@@ -214,6 +236,7 @@ export const texts = {
       sms: 'Otevře novou SMS na zadané číslo.',
       email: 'Otevře nový e-mail na zadanou adresu.',
       text: 'Zobrazí prostý text po naskenování.',
+      audio: 'Krátká skladba nebo znělka, kterou si lidi po naskenování pustí.',
     },
     fields: {
       url: 'URL adresa',

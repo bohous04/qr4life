@@ -8,6 +8,8 @@ import { texts } from '@/lib/i18n/cs';
 const apiErrors: Record<string, string> = {
   invalid_payload: texts.dashboard.saveError,
   invalid: texts.dashboard.saveError,
+  invalid_track: texts.dashboard.saveError,
+  mode_immutable: texts.dashboard.saveError,
 };
 
 /** Editační formulář existujícího kódu (typ lze změnit, obsah se přepíše). */
@@ -17,6 +19,8 @@ export function EditQrForm({
   initialName,
   initialPayload,
   initialFolderId,
+  initialQrMode,
+  initialAudio,
   folders,
 }: {
   id: string;
@@ -24,6 +28,8 @@ export function EditQrForm({
   initialName: string;
   initialPayload: unknown;
   initialFolderId: string | null;
+  initialQrMode: 'dynamic' | 'static';
+  initialAudio: { trackId: string; filename: string } | null;
   folders: { id: string; name: string }[];
 }) {
   const router = useRouter();
@@ -74,6 +80,8 @@ export function EditQrForm({
         initialType={initialType as QrTypeKey}
         initialName={initialName}
         initialPayload={initialPayload as Record<string, string | boolean>}
+        initialQrMode={initialQrMode}
+        initialAudio={initialAudio}
         submitLabel={texts.common.save}
         onSubmit={async ({ type, name, payload }) => {
           setSaved(false);

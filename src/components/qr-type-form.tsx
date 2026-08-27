@@ -3,10 +3,20 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { texts } from '@/lib/i18n/cs';
+import { AudioUpload, type AudioValue } from '@/components/audio-upload';
 
-export type QrTypeKey = 'url' | 'wifi' | 'vcard' | 'phone' | 'sms' | 'email' | 'text';
+export type QrTypeKey = 'url' | 'wifi' | 'vcard' | 'phone' | 'sms' | 'email' | 'text' | 'audio';
 
-const TYPES: QrTypeKey[] = ['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text'];
+const TYPES: QrTypeKey[] = ['url', 'wifi', 'vcard', 'phone', 'sms', 'email', 'text', 'audio'];
+
+// Typy, které umí i statický režim (obsah zapečený přímo v obrázku).
+// Nejde o import z lib/qr/static-content.ts — ten by do klientského
+// bundlu natáhl Zod a serverové moduly.
+const STATIC_CAPABLE: QrTypeKey[] = ['wifi', 'vcard', 'phone', 'sms', 'email', 'text'];
+
+function isStaticCapable(type: QrTypeKey): boolean {
+  return STATIC_CAPABLE.includes(type);
+}
 
 type PayloadState = Record<string, string | boolean>;
 
@@ -18,6 +28,7 @@ const emptyPayload: Record<QrTypeKey, PayloadState> = {
   sms: { number: '', body: '' },
   email: { to: '', subject: '', body: '' },
   text: { text: '' },
+  audio: { trackId: '', title: '' },
 };
 
 const fieldLabels: Record<string, string> = {
@@ -64,9 +75,13 @@ const FIELDS_BY_TYPE: Record<QrTypeKey, { key: string; type: 'text' | 'email' | 
     { key: 'body', type: 'textarea', optional: true },
   ],
   text: [{ key: 'text', type: 'textarea' }],
+  audio: [],
 };
 
-function buildPayload(type: QrTypeKey, state: PayloadState): unknown {
+function buildPayload(type: QrTypeKey, state: PayloadState, audio: AudioValue | null): unknown {
+  if (type === 'audio') {
+    return { trackId: audio?.trackId ?? '', ...(state.title ? { title: state.title } : {}) };
+  }
   if (type === 'wifi') {
     return {
       ssid: state.ssid,
@@ -104,6 +119,8 @@ export function QrTypeForm({
   initialType,
   initialName,
   initialPayload,
+  initialQrMode,
+  initialAudio,
   submitLabel,
   onSubmit,
 }: {
@@ -111,8 +128,15 @@ export function QrTypeForm({
   initialType?: QrTypeKey;
   initialName?: string;
   initialPayload?: unknown;
+  initialQrMode?: 'dynamic' | 'static';
+  initialAudio?: AudioValue | null;
   submitLabel: string;
-  onSubmit: (data: { type: QrTypeKey; name: string; payload: unknown }) => Promise<string | null>;
+  onSubmit: (data: {
+    type: QrTypeKey;
+    name: string;
+    payload: unknown;
+    qrMode: 'dynamic' | 'static';
+  }) => Promise<string | null>;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(mode === 'edit' ? 2 : 1);
@@ -121,6 +145,8 @@ export function QrTypeForm({
     () => ({ ...emptyPayload[initialType ?? 'url'], ...(initialPayload as PayloadState | undefined) }),
   );
   const [name, setName] = useState(initialName ?? '');
+  const [qrMode, setQrMode] = useState<'dynamic' | 'static'>(initialQrMode ?? 'dynamic');
+  const [audio, setAudio] = useState<AudioValue | null>(initialAudio ?? null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -149,7 +175,8 @@ export function QrTypeForm({
     const apiError = await onSubmit({
       type: activeType,
       name: name.trim(),
-      payload: buildPayload(activeType, payload),
+      payload: buildPayload(activeType, payload, audio),
+      qrMode: isStaticCapable(activeType) ? qrMode : 'dynamic',
     });
     if (apiError) setError(apiError);
     setBusy(false);
@@ -260,6 +287,40 @@ export function QrTypeForm({
             </p>
           </div>
         </>
+      )}
+
+      {isStaticCapable(activeType) && mode === 'create' && (
+        <div>
+          <span className="text-sm font-medium">{texts.dashboard.mode.label}</span>
+          <div className="mt-1 flex gap-2">
+            {(['dynamic', 'static'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setQrMode(option)}
+                aria-pressed={qrMode === option}
+                className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium ${
+                  qrMode === option ? 'border-ink bg-ink text-white' : 'border-line hover:bg-line/40'
+                }`}
+              >
+                {texts.dashboard.mode[option]}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-muted">
+            {qrMode === 'static' ? texts.dashboard.mode.staticHint : texts.dashboard.mode.dynamicHint}
+          </p>
+        </div>
+      )}
+
+      {mode === 'edit' && initialQrMode === 'static' && (
+        <p className="rounded-md border border-accent/40 bg-accent/5 px-3 py-2 text-sm">
+          {texts.dashboard.mode.staticEditWarning}
+        </p>
+      )}
+
+      {activeType === 'audio' && (step === 2 || mode === 'edit') && (
+        <AudioUpload value={audio} onChange={setAudio} />
       )}
 
       {(step === 2 || mode === 'edit') && (

@@ -13,7 +13,10 @@ export default async function EditCodePage({ params }: { params: Promise<{ id: s
   const user = await getSessionUser(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) return null;
 
-  const qr = await prisma.qrCode.findUnique({ where: { id } });
+  const qr = await prisma.qrCode.findUnique({
+    where: { id },
+    include: { audioTrack: { select: { id: true, filename: true } } },
+  });
   if (!qr || qr.userId !== user.id) notFound();
 
   const folders = await prisma.folder.findMany({
@@ -53,6 +56,10 @@ export default async function EditCodePage({ params }: { params: Promise<{ id: s
           initialName={qr.name}
           initialPayload={qr.payload}
           initialFolderId={qr.folderId}
+          initialQrMode={qr.mode}
+          initialAudio={
+            qr.audioTrack ? { trackId: qr.audioTrack.id, filename: qr.audioTrack.filename } : null
+          }
           folders={folders}
         />
       </div>

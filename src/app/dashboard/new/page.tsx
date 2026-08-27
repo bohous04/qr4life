@@ -9,6 +9,8 @@ const apiErrors: Record<string, string> = {
   rate_limited: texts.dashboard.rateLimited,
   invalid_payload: texts.dashboard.createError,
   invalid: texts.dashboard.createError,
+  invalid_mode: texts.dashboard.createError,
+  invalid_track: texts.dashboard.createError,
 };
 
 /** Průvodce novým kódem: typ → obsah → název. */
@@ -22,11 +24,11 @@ export default function NewCodePage() {
         <QrTypeForm
           mode="create"
           submitLabel={texts.dashboard.new.create}
-          onSubmit={async ({ type, name, payload }) => {
+          onSubmit={async ({ type, name, payload, qrMode }) => {
             const response = await fetch('/api/qr', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ type, name, payload }),
+              body: JSON.stringify({ type, name, payload, mode: qrMode }),
             });
             if (response.ok) {
               router.push('/dashboard');
