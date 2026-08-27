@@ -764,3 +764,54 @@ test('zvukový stream: 403 pro adminem blokovaný kód, 404 pro neexistující h
   const blocked = await request.get(`/${hash}/audio`);
   expect(blocked.status()).toBe(403);
 });
+
+test('zvukový stream: rozsahový i celý požadavek na větší stopě vrátí přesně odpovídající bajty', async ({
+  request,
+}) => {
+  // Stopa přes 500 KB, aby rozsahový požadavek níže přesáhl velikost
+  // jedné dávky (256 KiB) čtené přes substring() a ověřil i skládání
+  // víc dávek za sebou, ne jen samotnou délku.
+  const trackBytes = fakeMp3(500 * 1024);
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const upload = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'pisen.mp3', mimeType: 'audio/mpeg', buffer: trackBytes } },
+  });
+  const track = (await upload.json()) as { id: string };
+  const created = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'audio', name: 'Znělka', payload: { trackId: track.id, title: 'Znělka' } },
+  });
+  const { hash } = (await created.json()) as { id: string; hash: string };
+
+  const partial = await request.get(`/${hash}/audio`, {
+    headers: { Range: 'bytes=100000-399999' },
+  });
+  expect(partial.status()).toBe(206);
+  expect(partial.headers()['content-range']).toBe('bytes 100000-399999/512000');
+  expect(partial.headers()['content-length']).toBe('300000');
+  const partialBody = await partial.body();
+  expect(partialBody.byteLength).toBe(300000);
+  expect(partialBody).toEqual(trackBytes.subarray(100000, 400000));
+
+  const full = await request.get(`/${hash}/audio`);
+  expect(full.status()).toBe(200);
+  expect(full.headers()['content-length']).toBe('512000');
+  const fullBody = await full.body();
+  expect(fullBody.byteLength).toBe(512000);
+  expect(fullBody).toEqual(trackBytes);
+});
+
+test('upload zvuku: cca 12 MB (mezi starým 10MB stropem middlewaru a 15MB limitem) projde', async ({
+  request,
+}) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const bigButAllowed = 12 * 1024 * 1024;
+  const upload = await request.post('/api/audio', {
+    headers: { cookie },
+    multipart: { file: { name: 'dvanact-mb.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3(bigButAllowed) } },
+  });
+  expect(upload.status()).toBe(201);
+  const track = (await upload.json()) as { size: number };
+  expect(track.size).toBe(bigButAllowed);
+});

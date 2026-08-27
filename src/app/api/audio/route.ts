@@ -50,6 +50,20 @@ function capReadableStream(
 }
 
 /**
+ * Kolik uploadů se smí zpracovávat současně, napříč všemi uživateli.
+ * `clientIp()` čte první záznam z X-Forwarded-For, kterou si klient za
+ * Traefikem může nastavit sám — limit jen podle IP tedy jde obejít.
+ * I bez obcházení ale každý pokus (přijatý i zamítnutý limitem na
+ * uživatele) nejdřív nabufferuje desítky MB a pak čeká na zámek řádku
+ * uživatele (`SELECT ... FOR UPDATE` v transakci níže) — souběžné
+ * pokusy by se tak řadily za sebe a žraly paměť i připojení z poolu,
+ * než se vůbec rozhodne o zamítnutí. In-process čítač proto zamítne
+ * nadbytečné uploady rovnou, ještě před bufferováním těla.
+ */
+const MAX_CONCURRENT_UPLOADS = 3;
+let inFlightUploads = 0;
+
+/**
  * Nahrání zvukové stopy. Stopa vzniká bez vazby na kód; naváže ji až
  * POST /api/qr. Osiřelé stopy maže sweep po 24 h.
  */
@@ -59,94 +73,110 @@ export async function POST(request: NextRequest) {
   if (!user.emailVerifiedAt) {
     return NextResponse.json({ error: 'email_not_verified' }, { status: 403 });
   }
-  if (hit(`audio-upload:${clientIp(request)}`, 20, 60 * 60 * 1000)) {
+  // Kombinace IP a id uživatele: IP se dá za Traefikem zfalšovat
+  // (spoofnutá/sdílená X-Forwarded-For by jinak obešla limit), ale
+  // přihlášený uživatel má vždy jen svůj vlastní účet — limit na
+  // user.id proto drží i při podvržené IP.
+  if (
+    hit(`audio-upload:${clientIp(request)}`, 20, 60 * 60 * 1000) ||
+    hit(`audio-upload-user:${user.id}`, 20, 60 * 60 * 1000)
+  ) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
 
-  // Velikost hlídáme ještě před parsováním těla, ať se velký soubor
-  // vůbec nedostane do paměti. Content-Length je jen rychlá předběžná
-  // kontrola — dá se vynechat (chunked přenos) nebo zalhat, takže samotné
-  // parsování níže musí být limitované na úrovni streamu.
-  const declared = Number(request.headers.get('content-length') ?? 0);
-  if (declared > MAX_UPLOAD_REQUEST_BYTES) {
-    return NextResponse.json({ error: 'too_large' }, { status: 413 });
+  if (inFlightUploads >= MAX_CONCURRENT_UPLOADS) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
+  inFlightUploads++;
 
-  // Tvrdý limit na streamu: i bez (nebo se lživou) Content-Length hlavičkou
-  // se do paměti nikdy nenabufferuje víc bajtů, než kolik dovolujeme.
-  const capState: StreamCapState = { exceeded: false, received: 0 };
-  let form: FormData | null;
   try {
-    const limitedBody = request.body ? capReadableStream(request.body, MAX_UPLOAD_REQUEST_BYTES, capState) : null;
-    // `duplex` chybí ve verzi lib.dom.d.ts, kterou používáme, ale runtime
-    // (Node/undici) ho pro streamované tělo vyžaduje.
-    const boundRequest = limitedBody
-      ? new Request(
-          request.url,
-          {
-            method: 'POST',
-            headers: request.headers,
-            body: limitedBody,
-            duplex: 'half',
-          } as RequestInit & { duplex: 'half' },
-        )
-      : request;
-    form = await boundRequest.formData();
-  } catch {
-    // Rozlišujeme podle sdíleného příznaku, ne podle instance chyby —
-    // ta se přes undici multipart parser nemusí dochovat beze změny.
-    form = null;
-  }
-
-  if (form === null && capState.exceeded) {
-    return NextResponse.json({ error: 'too_large' }, { status: 413 });
-  }
-
-  const file = form?.get('file');
-  if (!(file instanceof File)) return NextResponse.json({ error: 'invalid' }, { status: 400 });
-  if (file.size > MAX_AUDIO_BYTES) {
-    // Pás a šle: pojistka pro případ, že by se limit streamu obešel.
-    return NextResponse.json({ error: 'too_large' }, { status: 413 });
-  }
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const mime = detectAudioMime(new Uint8Array(buffer.subarray(0, 16)));
-  if (!mime) return NextResponse.json({ error: 'unsupported_type' }, { status: 415 });
-
-  const filename = sanitizeAudioFilename(file.name);
-
-  // Kontrola limitu a vložení musí být atomické — jinak dva souběžné
-  // uploady mohou oba přečíst počet pod limitem a oba vložit. Řádek
-  // uživatele proto nejdřív zamkneme (`FOR UPDATE`), teprve pak počítáme
-  // a vkládáme: souběžné uploady stejného uživatele se tak serializují.
-  const track = await prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${user.id} FOR UPDATE`;
-
-    const count = await tx.audioTrack.count({ where: { userId: user.id } });
-    if (count >= MAX_TRACKS_PER_USER) {
-      return null;
+    // Velikost hlídáme ještě před parsováním těla, ať se velký soubor
+    // vůbec nedostane do paměti. Content-Length je jen rychlá předběžná
+    // kontrola — dá se vynechat (chunked přenos) nebo zalhat, takže samotné
+    // parsování níže musí být limitované na úrovni streamu.
+    const declared = Number(request.headers.get('content-length') ?? 0);
+    if (declared > MAX_UPLOAD_REQUEST_BYTES) {
+      return NextResponse.json({ error: 'too_large' }, { status: 413 });
     }
 
-    return tx.audioTrack.create({
-      data: {
-        userId: user.id,
-        filename,
-        mime,
-        size: buffer.byteLength,
-        data: buffer,
-      },
-      select: { id: true, filename: true, size: true, mime: true },
+    // Tvrdý limit na streamu: i bez (nebo se lživou) Content-Length hlavičkou
+    // se do paměti nikdy nenabufferuje víc bajtů, než kolik dovolujeme.
+    const capState: StreamCapState = { exceeded: false, received: 0 };
+    let form: FormData | null;
+    try {
+      const limitedBody = request.body ? capReadableStream(request.body, MAX_UPLOAD_REQUEST_BYTES, capState) : null;
+      // `duplex` chybí ve verzi lib.dom.d.ts, kterou používáme, ale runtime
+      // (Node/undici) ho pro streamované tělo vyžaduje.
+      const boundRequest = limitedBody
+        ? new Request(
+            request.url,
+            {
+              method: 'POST',
+              headers: request.headers,
+              body: limitedBody,
+              duplex: 'half',
+            } as RequestInit & { duplex: 'half' },
+          )
+        : request;
+      form = await boundRequest.formData();
+    } catch {
+      // Rozlišujeme podle sdíleného příznaku, ne podle instance chyby —
+      // ta se přes undici multipart parser nemusí dochovat beze změny.
+      form = null;
+    }
+
+    if (form === null && capState.exceeded) {
+      return NextResponse.json({ error: 'too_large' }, { status: 413 });
+    }
+
+    const file = form?.get('file');
+    if (!(file instanceof File)) return NextResponse.json({ error: 'invalid' }, { status: 400 });
+    if (file.size > MAX_AUDIO_BYTES) {
+      // Pás a šle: pojistka pro případ, že by se limit streamu obešel.
+      return NextResponse.json({ error: 'too_large' }, { status: 413 });
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const mime = detectAudioMime(new Uint8Array(buffer.subarray(0, 16)));
+    if (!mime) return NextResponse.json({ error: 'unsupported_type' }, { status: 415 });
+
+    const filename = sanitizeAudioFilename(file.name);
+
+    // Kontrola limitu a vložení musí být atomické — jinak dva souběžné
+    // uploady mohou oba přečíst počet pod limitem a oba vložit. Řádek
+    // uživatele proto nejdřív zamkneme (`FOR UPDATE`), teprve pak počítáme
+    // a vkládáme: souběžné uploady stejného uživatele se tak serializují.
+    const track = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${user.id} FOR UPDATE`;
+
+      const count = await tx.audioTrack.count({ where: { userId: user.id } });
+      if (count >= MAX_TRACKS_PER_USER) {
+        return null;
+      }
+
+      return tx.audioTrack.create({
+        data: {
+          userId: user.id,
+          filename,
+          mime,
+          size: buffer.byteLength,
+          data: buffer,
+        },
+        select: { id: true, filename: true, size: true, mime: true },
+      });
+    }, {
+      // Uvnitř zámku se zapisuje až 15 MB blobu — výchozích 5 s Prismy
+      // by za zátěže stačit nemuselo a legitimní upload by spadl na 500.
+      timeout: 20_000,
+      maxWait: 10_000,
     });
-  }, {
-    // Uvnitř zámku se zapisuje až 15 MB blobu — výchozích 5 s Prismy
-    // by za zátěže stačit nemuselo a legitimní upload by spadl na 500.
-    timeout: 20_000,
-    maxWait: 10_000,
-  });
 
-  if (!track) {
-    return NextResponse.json({ error: 'track_limit' }, { status: 409 });
+    if (!track) {
+      return NextResponse.json({ error: 'track_limit' }, { status: 409 });
+    }
+
+    return NextResponse.json(track, { status: 201 });
+  } finally {
+    inFlightUploads--;
   }
-
-  return NextResponse.json(track, { status: 201 });
 }
