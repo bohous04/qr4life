@@ -3,14 +3,16 @@ import { prisma } from '@/lib/db';
 import { getSessionUser, SESSION_COOKIE } from '@/lib/auth/session';
 import { renderQr } from '@/lib/qr/render';
 import { appUrl } from '@/lib/http';
+import { isStaticCapable, staticContent } from '@/lib/qr/static-content';
 
 /**
  * Stažení QR kódu (PNG/SVG). Jen vlastník, plus admin kvůli náhledům
  * ve správě — cizí id vrací běžnému uživateli 404, aby nelezlo,
  * které kódy existují.
  *
- * Kód obsahuje VÝHRADNĚ krátkou redirect URL /{hash} — to je smysl
- * dynamických kódů: vytištěný kód zůstává, cíl se mění v administraci.
+ * Dynamický kód kóduje VÝHRADNĚ krátkou redirect URL /{hash} — to je
+ * jeho smysl: vytištěný kód zůstává, cíl se mění v administraci.
+ * Statický kód nese obsah přímo (viz static-content.ts).
  */
 export async function GET(
   request: NextRequest,
@@ -25,7 +27,13 @@ export async function GET(
     return new Response(null, { status: 404 });
   }
 
-  const content = `${appUrl()}/${qr.hash}`;
+  // Statický kód nese obsah přímo; dynamický kóduje krátkou redirect URL.
+  let content = `${appUrl()}/${qr.hash}`;
+  if (qr.mode === 'static' && isStaticCapable(qr.type)) {
+    const direct = staticContent(qr.type, qr.payload);
+    if (!direct) return new Response(null, { status: 404 });
+    content = direct;
+  }
 
   const format = request.nextUrl.searchParams.get('format') === 'svg' ? 'svg' : 'png';
   const sizeParam = Number(request.nextUrl.searchParams.get('size') ?? 512);

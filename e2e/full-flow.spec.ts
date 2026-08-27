@@ -476,3 +476,38 @@ test('zvukový kód: naváže stopu, cizí trackId odmítne', async ({ request }
   expect(stolen.status()).toBe(400);
   expect((await stolen.json()).error).toBe('invalid_track');
 });
+
+test('statický kód kóduje obsah, dynamický kóduje odkaz', async ({ request }) => {
+  const cookie = await registerAndGetVerifiedCookie(request, uniqueEmail());
+  const payload = { ssid: 'Chalupa', password: 'tajneheslo', hidden: false };
+
+  const staticCode = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'wifi', mode: 'static', name: 'Staticky', payload },
+  });
+  const { id: staticId } = (await staticCode.json()) as { id: string };
+
+  const dynamicCode = await request.post('/api/qr', {
+    headers: { cookie },
+    data: { type: 'wifi', name: 'Dynamicky', payload },
+  });
+  const { id: dynamicId } = (await dynamicCode.json()) as { id: string };
+
+  const [staticPng, dynamicPng] = await Promise.all([
+    request.get(`/api/qr/${staticId}/download?format=png&size=256`, { headers: { cookie } }),
+    request.get(`/api/qr/${dynamicId}/download?format=png&size=256`, { headers: { cookie } }),
+  ]);
+  expect(staticPng.status()).toBe(200);
+  expect(dynamicPng.status()).toBe(200);
+
+  // Stejný obsah, jiný režim ⇒ jiný obrázek.
+  expect(Buffer.from(await staticPng.body()).equals(Buffer.from(await dynamicPng.body()))).toBe(
+    false,
+  );
+
+  // Statický obrázek musí být shodný s přímým renderem WIFI: řetězce.
+  const { renderQr } = await import('../src/lib/qr/render');
+  const { wifiString } = await import('../src/lib/qr/wifi-string');
+  const expected = (await renderQr(wifiString({ ...payload }), 'png', 256)) as Buffer;
+  expect(Buffer.from(await staticPng.body()).equals(expected)).toBe(true);
+});
