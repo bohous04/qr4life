@@ -28,7 +28,7 @@ const emptyPayload: Record<QrTypeKey, PayloadState> = {
   sms: { number: '', body: '' },
   email: { to: '', subject: '', body: '' },
   text: { text: '' },
-  audio: { trackId: '', title: '' },
+  audio: { trackId: '' },
 };
 
 const fieldLabels: Record<string, string> = {
@@ -80,7 +80,9 @@ const FIELDS_BY_TYPE: Record<QrTypeKey, { key: string; type: 'text' | 'email' | 
 
 function buildPayload(type: QrTypeKey, state: PayloadState, audio: AudioValue | null): unknown {
   if (type === 'audio') {
-    return { trackId: audio?.trackId ?? '', ...(state.title ? { title: state.title } : {}) };
+    // Vlastní titulek zvukového kódu nemá pole ve formuláři — název kódu
+    // (state name) už tuhle roli plní, druhé pole by bylo duplicitní.
+    return { trackId: audio?.trackId ?? '' };
   }
   if (type === 'wifi') {
     return {
@@ -323,7 +325,9 @@ export function QrTypeForm({
         <AudioUpload value={audio} onChange={setAudio} />
       )}
 
-      {(step === 2 || mode === 'edit') && (
+      {/* Nadpis dáváme jen tam, kde pod ním opravdu něco je — audio má
+          vlastní blok (AudioUpload výše) a prázdný seznam polí. */}
+      {(step === 2 || mode === 'edit') && fields.length > 0 && (
         <>
           <h2 className="font-heading text-xl font-semibold">{texts.dashboard.step.data}</h2>
           {fields.map(renderField)}

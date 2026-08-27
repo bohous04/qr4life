@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { texts } from '@/lib/i18n/cs';
 
 export interface AudioValue {
@@ -27,6 +27,13 @@ export function AudioUpload({
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  // Uvolní starou náhledovou URL při každé změně (nová stopa i unmount).
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   async function upload(file: File) {
     setBusy(true);
     setError(null);
@@ -37,12 +44,18 @@ export function AudioUpload({
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string };
         setError((data.error && uploadErrors[data.error]) ?? texts.dashboard.audio.failed);
-        onChange(null);
+        // Náhrada selhala — pokud už existovala platná stopa, necháme ji být,
+        // ať formulář neodešle prázdné trackId. Vyčistit smí jen to, co nikdy nebylo.
+        if (!value) onChange(null);
         return;
       }
       const track = (await response.json()) as { id: string; filename: string };
       onChange({ trackId: track.id, filename: track.filename });
       setPreviewUrl(URL.createObjectURL(file));
+    } catch {
+      // Výpadek sítě apod. — ukázat chybu, ale zachovat poslední platnou stopu.
+      setError(texts.dashboard.audio.failed);
+      if (!value) onChange(null);
     } finally {
       setBusy(false);
     }
