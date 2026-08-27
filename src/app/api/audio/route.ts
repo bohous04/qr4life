@@ -3,25 +3,44 @@ import { prisma } from '@/lib/db';
 import { getSessionUser, SESSION_COOKIE } from '@/lib/auth/session';
 import { hit } from '@/lib/security/rate-limit';
 import { clientIp } from '@/lib/http';
-import { detectAudioMime, MAX_AUDIO_BYTES, MAX_TRACKS_PER_USER } from '@/lib/audio/sniff';
+import {
+  detectAudioMime,
+  MAX_AUDIO_BYTES,
+  MAX_TRACKS_PER_USER,
+  MAX_UPLOAD_REQUEST_BYTES,
+  sanitizeAudioFilename,
+} from '@/lib/audio/sniff';
 
-/** Signalizuje, že stream těla překročil povolený limit bajtů. */
-class StreamTooLargeError extends Error {}
+/**
+ * Stav ořezávání streamu, sdílený mezi `capReadableStream` a handlerem.
+ * Nespoléháme na to, že se chyba, kterou stream vyhodí, dochová beze
+ * změny až do `catch` bloku po `formData()` — undici multipart parser
+ * ji může zabalit nebo nahradit jinou. Místo identity chyby proto po
+ * jakémkoli selhání parsování čteme tenhle sdílený příznak.
+ */
+interface StreamCapState {
+  exceeded: boolean;
+  received: number;
+}
 
 /**
  * Obalí čtený stream tak, aby se po překročení `limitBytes` zahodil a
- * dál se z něj čte chyba `StreamTooLargeError` — parser (formData) tak
- * nikdy nenabufferuje víc, než kolik dovolujeme, ať už klient pošle
- * jakoukoli (nebo žádnou) Content-Length hlavičku.
+ * nastavil se `state.exceeded` — parser (formData) tak nikdy
+ * nenabufferuje víc, než kolik dovolujeme, ať už klient pošle jakoukoli
+ * (nebo žádnou) Content-Length hlavičku.
  */
-function capReadableStream(body: ReadableStream<Uint8Array>, limitBytes: number): ReadableStream<Uint8Array> {
-  let received = 0;
+function capReadableStream(
+  body: ReadableStream<Uint8Array>,
+  limitBytes: number,
+  state: StreamCapState,
+): ReadableStream<Uint8Array> {
   return body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
       transform(chunk, controller) {
-        received += chunk.byteLength;
-        if (received > limitBytes) {
-          controller.error(new StreamTooLargeError('stream too large'));
+        state.received += chunk.byteLength;
+        if (state.received > limitBytes) {
+          state.exceeded = true;
+          controller.error(new Error('stream too large'));
           return;
         }
         controller.enqueue(chunk);
@@ -49,15 +68,16 @@ export async function POST(request: NextRequest) {
   // kontrola — dá se vynechat (chunked přenos) nebo zalhat, takže samotné
   // parsování níže musí být limitované na úrovni streamu.
   const declared = Number(request.headers.get('content-length') ?? 0);
-  if (declared > MAX_AUDIO_BYTES + 4096) {
+  if (declared > MAX_UPLOAD_REQUEST_BYTES) {
     return NextResponse.json({ error: 'too_large' }, { status: 413 });
   }
 
   // Tvrdý limit na streamu: i bez (nebo se lživou) Content-Length hlavičkou
   // se do paměti nikdy nenabufferuje víc bajtů, než kolik dovolujeme.
+  const capState: StreamCapState = { exceeded: false, received: 0 };
   let form: FormData | null;
   try {
-    const limitedBody = request.body ? capReadableStream(request.body, MAX_AUDIO_BYTES + 4096) : null;
+    const limitedBody = request.body ? capReadableStream(request.body, MAX_UPLOAD_REQUEST_BYTES, capState) : null;
     // `duplex` chybí ve verzi lib.dom.d.ts, kterou používáme, ale runtime
     // (Node/undici) ho pro streamované tělo vyžaduje.
     const boundRequest = limitedBody
@@ -72,11 +92,14 @@ export async function POST(request: NextRequest) {
         )
       : request;
     form = await boundRequest.formData();
-  } catch (err) {
-    if (err instanceof StreamTooLargeError) {
-      return NextResponse.json({ error: 'too_large' }, { status: 413 });
-    }
+  } catch {
+    // Rozlišujeme podle sdíleného příznaku, ne podle instance chyby —
+    // ta se přes undici multipart parser nemusí dochovat beze změny.
     form = null;
+  }
+
+  if (form === null && capState.exceeded) {
+    return NextResponse.json({ error: 'too_large' }, { status: 413 });
   }
 
   const file = form?.get('file');
@@ -90,21 +113,35 @@ export async function POST(request: NextRequest) {
   const mime = detectAudioMime(new Uint8Array(buffer.subarray(0, 16)));
   if (!mime) return NextResponse.json({ error: 'unsupported_type' }, { status: 415 });
 
-  const count = await prisma.audioTrack.count({ where: { userId: user.id } });
-  if (count >= MAX_TRACKS_PER_USER) {
+  const filename = sanitizeAudioFilename(file.name);
+
+  // Kontrola limitu a vložení musí být atomické — jinak dva souběžné
+  // uploady mohou oba přečíst počet pod limitem a oba vložit. Řádek
+  // uživatele proto nejdřív zamkneme (`FOR UPDATE`), teprve pak počítáme
+  // a vkládáme: souběžné uploady stejného uživatele se tak serializují.
+  const track = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${user.id} FOR UPDATE`;
+
+    const count = await tx.audioTrack.count({ where: { userId: user.id } });
+    if (count >= MAX_TRACKS_PER_USER) {
+      return null;
+    }
+
+    return tx.audioTrack.create({
+      data: {
+        userId: user.id,
+        filename,
+        mime,
+        size: buffer.byteLength,
+        data: buffer,
+      },
+      select: { id: true, filename: true, size: true, mime: true },
+    });
+  });
+
+  if (!track) {
     return NextResponse.json({ error: 'track_limit' }, { status: 409 });
   }
-
-  const track = await prisma.audioTrack.create({
-    data: {
-      userId: user.id,
-      filename: file.name.slice(0, 200) || 'audio',
-      mime,
-      size: buffer.byteLength,
-      data: buffer,
-    },
-    select: { id: true, filename: true, size: true, mime: true },
-  });
 
   return NextResponse.json(track, { status: 201 });
 }
