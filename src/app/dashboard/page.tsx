@@ -88,6 +88,7 @@ export default async function DashboardPage({
                 adminBlocked: code.adminBlocked,
                 createdAt: code.createdAt.toISOString(),
                 scanCount: code._count.scans,
+                mode: code.mode,
               }}
             />
           ))}

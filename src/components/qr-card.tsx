@@ -14,6 +14,7 @@ export interface QrCardData {
   adminBlocked: boolean;
   createdAt: string;
   scanCount: number;
+  mode: 'dynamic' | 'static';
 }
 
 function scanLabel(count: number): string {
@@ -104,13 +105,24 @@ export function QrCard({ code }: { code: QrCardData }) {
             >
               {statusLabel}
             </span>
+            {/* Statický kód: odznak vedle stavu — obrázek nese obsah přímo */}
+            {code.mode === 'static' && (
+              <span className="whitespace-nowrap rounded-full bg-line px-2.5 py-0.5 text-xs font-medium text-muted">
+                {texts.dashboard.mode.staticBadge}
+              </span>
+            )}
           </div>
 
           <div className="mt-1 text-sm text-muted">
             {texts.dashboard.typeNames[code.type as keyof typeof texts.dashboard.typeNames]} ·{' '}
-            <span className="whitespace-nowrap">
-              {code.scanCount} {scanLabel(code.scanCount)}
-            </span>{' '}
+            {/* Statický kód se neskenuje přes appku — počet skenů nemá smysl */}
+            {code.mode === 'static' ? (
+              <span title={texts.dashboard.mode.staticNoScans}>—</span>
+            ) : (
+              <span className="whitespace-nowrap">
+                {code.scanCount} {scanLabel(code.scanCount)}
+              </span>
+            )}{' '}
             · {new Date(code.createdAt).toLocaleDateString('cs-CZ')}
           </div>
 
@@ -141,7 +153,8 @@ export function QrCard({ code }: { code: QrCardData }) {
         <a href={`/api/qr/${code.id}/download?format=svg`} className={`${actionClass} text-center`}>
           {texts.dashboard.downloadSvg}
         </a>
-        {!code.adminBlocked && (
+        {/* Statický kód nemá co pozastavit — obraz nese obsah přímo */}
+        {code.mode === 'dynamic' && !code.adminBlocked && (
           <button
             type="button"
             onClick={() => {
