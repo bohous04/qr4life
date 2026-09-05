@@ -1,63 +1,64 @@
 # QR4Life
 
-Dynamické QR kódy. Vytiskneš jednou, měníš kdykoliv — vygenerovaný kód obsahuje
-jen krátkou URL `https://qr.lnrtdev.cz/{hash}`, cíl se spravuje na serveru.
-Statický QR kód se po vytištění změnit nedá; tady stačí přepsat cíl v administraci.
+Dynamic QR codes. Print once, change the destination anytime: the generated code
+only contains a short URL (`https://qr.lnrtdev.cz/{hash}`), the target is managed
+on the server. A static QR code cannot be changed once it is printed; here you
+just edit the destination in the dashboard.
 
-Běží na [qr.lnrtdev.cz](https://qr.lnrtdev.cz).
+Live at [qr.lnrtdev.cz](https://qr.lnrtdev.cz).
 
-<!-- screenshot: docs/screenshot.png (to be added) -->
+![QR4Life landing page](docs/screenshot.png)
 
-## Co umí
+## Features
 
-- 7 typů kódů: **odkaz, Wi-Fi, vizitka (vCard), telefon, SMS, e-mail, text**
-- Okamžitý redirect (HTTP 302, `Cache-Control: no-store`) — bez mezistránky
-- Wi-Fi kód: stránka s SSID, heslem, tlačítkem „Kopírovat heslo" a nativním Wi-Fi QR
-- Stažení PNG i SVG (náhled i download ze stejného renderu)
-- Statistiky skenů
-- Přihlášení e-mailem (argon2id, DB sessions) i přes Sign in with Apple
-- Ověření e-mailu, reset hesla, rate limiting, whitelist schémat,
-  volitelná Google Safe Browsing kontrola cílových URL
-- Admin role: blokace kódů
+- 7 code types: **link, Wi-Fi, vCard, phone, SMS, e-mail, plain text**
+- Instant redirect (HTTP 302, `Cache-Control: no-store`), no interstitial page
+- Wi-Fi codes: a page with the SSID, password, a "copy password" button and a native Wi-Fi QR
+- PNG and SVG download (preview and download come from the same render)
+- Scan statistics
+- E-mail sign-in (argon2id, DB sessions) and Sign in with Apple
+- E-mail verification, password reset, rate limiting, URL scheme whitelist,
+  optional Google Safe Browsing check of destination URLs
+- Admin role: block codes
 
-## Rychlý start (vývoj)
+## Quick start (development)
 
 ```bash
 pnpm install
-docker compose up -d          # lokální PostgreSQL na portu 5433
-cp .env.example .env          # doplň hodnoty
-pnpm exec prisma migrate dev  # migrace
+docker compose up -d          # local PostgreSQL on port 5433
+cp .env.example .env          # fill in the values
+pnpm exec prisma migrate dev  # migrations
 pnpm dev
 ```
 
-Bez Dockeru: stačí jakýkoli PostgreSQL a `DATABASE_URL` v `.env`.
+Without Docker: any PostgreSQL works, just set `DATABASE_URL` in `.env`.
 
-## Testy
+## Tests
 
 ```bash
-pnpm test          # Vitest (unit + integrační)
-pnpm build         # produkční build
-pnpm exec playwright test   # E2E (vyžaduje běžící DB)
+pnpm test                   # Vitest (unit + integration)
+pnpm build                  # production build
+pnpm exec playwright test   # E2E (needs a running DB)
 ```
 
-## Env proměnné
+## Environment variables
 
-| Proměnná | Povinná | Popis |
+| Variable | Required | Description |
 | --- | --- | --- |
-| `DATABASE_URL` | ano | PostgreSQL connection string |
-| `SESSION_SECRET` | ano | HMAC secret pro Apple state (openssl rand -hex 32) |
-| `NEXT_PUBLIC_APP_URL` | ano | Veřejná URL aplikace (např. `https://qr.lnrtdev.cz`) |
-| `ADMIN_EMAIL` | ne | E-mail, který se při registraci stane adminem |
-| `SMTP_HOST` / `SMTP_PORT` | ne | SMTP pro ověřovací a reset e-maily (bez nich se logují do konzole) |
-| `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | ne | SMTP přihlašovací údaje |
-| `APPLE_SERVICES_ID` / `APPLE_TEAM_ID` / `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY` | ne | Sign in with Apple (bez nich se tlačítko nezobrazí) |
-| `GOOGLE_SAFE_BROWSING_KEY` | ne | Kontrola cílových URL (bez ní běží jen whitelist schémat) |
+| `DATABASE_URL` | yes | PostgreSQL connection string |
+| `SESSION_SECRET` | yes | HMAC secret for the Apple sign-in state (`openssl rand -hex 32`) |
+| `NEXT_PUBLIC_APP_URL` | yes | Public URL of the app (e.g. `https://qr.lnrtdev.cz`) |
+| `ADMIN_EMAIL` | no | E-mail address that becomes admin on registration |
+| `SMTP_HOST` / `SMTP_PORT` | no | SMTP for verification and reset e-mails (without them, links are logged to the console) |
+| `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | no | SMTP credentials |
+| `APPLE_SERVICES_ID` / `APPLE_TEAM_ID` / `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY` | no | Sign in with Apple (without them the button is hidden) |
+| `GOOGLE_SAFE_BROWSING_KEY` | no | Destination URL check (without it only the scheme whitelist applies) |
 
 ## Deploy
 
-Aplikace se nasazuje jako Docker image (`Dockerfile`, Next.js standalone).
-Při startu běží `prisma migrate deploy` a pak `node server.js`.
+The app ships as a Docker image (`Dockerfile`, Next.js standalone).
+On start it runs `prisma migrate deploy` and then `node server.js`.
 
-## Licence
+## License
 
 [MIT](LICENSE)
