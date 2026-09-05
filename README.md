@@ -2,6 +2,11 @@
 
 Dynamické QR kódy. Vytiskneš jednou, měníš kdykoliv — vygenerovaný kód obsahuje
 jen krátkou URL `https://qr.lnrtdev.cz/{hash}`, cíl se spravuje na serveru.
+Statický QR kód se po vytištění změnit nedá; tady stačí přepsat cíl v administraci.
+
+Běží na [qr.lnrtdev.cz](https://qr.lnrtdev.cz).
+
+<!-- screenshot: docs/screenshot.png (to be added) -->
 
 ## Co umí
 
